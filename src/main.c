@@ -27,6 +27,10 @@
 #define MAX_AMMO 30
 #define RELOAD_TIME 10.0f
 #define FIRE_RATE 0.2f  // Time between shots in seconds
+#define BUTTON_WIDTH 200
+#define BUTTON_HEIGHT 60
+#define TITLE_FONT_SIZE 60
+#define BUTTON_FONT_SIZE 30
 
 typedef struct {
     float x, y;
@@ -55,6 +59,12 @@ typedef struct {
     bool active;
 } Particle;
 
+typedef enum {
+    MENU_STATE,
+    GAME_STATE,
+    PAUSE_STATE
+} GameScreenState;
+
 typedef struct {
     Ship ship;
     GameObject bullets[MAX_BULLETS];
@@ -70,6 +80,11 @@ typedef struct {
     float fireTimer;
     bool running;
     bool Debug;
+    GameScreenState screenState;
+    Rectangle playButton;
+    Rectangle quitButton;
+    Rectangle resumeButton;
+    bool windowFocused;
 } GameState;
 
 // Function prototypes
@@ -86,6 +101,10 @@ void renderGameObject(const GameObject* obj, int sides, const GameState* state);
 void updateParticles(GameState* state, float deltaTime);
 void renderParticles(const GameState* state);
 void emitParticles(GameState* state, int count);
+void handleMenuInput(GameState* state);
+void renderMenu(const GameState* state);
+void handlePauseInput(GameState* state);
+void renderPause(const GameState* state);
 
 int main(int argc, char* argv[]) {
     // Initialize random seed
@@ -101,14 +120,61 @@ int main(int argc, char* argv[]) {
     // Initialize game state
     initGameState(&gameState);
     
+    // Setup buttons
+    gameState.playButton = (Rectangle){
+        WINDOW_WIDTH/2 - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
+    gameState.quitButton = (Rectangle){
+        WINDOW_WIDTH/2 - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2 + BUTTON_HEIGHT + 20,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
+    gameState.resumeButton = (Rectangle){
+        WINDOW_WIDTH/2 - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2 - BUTTON_HEIGHT - 20,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
+    // Start with menu state
+    gameState.screenState = MENU_STATE;
+    gameState.windowFocused = true;
+    
     // Game loop
     while (!WindowShouldClose() && gameState.running) {
         float deltaTime = GetFrameTime();
         
-        gameState.fireTimer -= deltaTime; // Update fire cooldown timer
-        handleInput(&gameState);
-        updateGame(&gameState, deltaTime);
-        renderGame(&gameState);
+        // Check window focus status
+        bool currentlyFocused = IsWindowFocused();
+        if (gameState.windowFocused && !currentlyFocused && gameState.screenState == GAME_STATE) {
+            gameState.screenState = PAUSE_STATE;
+        }
+        gameState.windowFocused = currentlyFocused;
+        
+        switch (gameState.screenState) {
+            case MENU_STATE:
+                handleMenuInput(&gameState);
+                renderMenu(&gameState);
+                break;
+                
+            case GAME_STATE:
+                gameState.fireTimer -= deltaTime; // Update fire cooldown timer
+                handleInput(&gameState);
+                updateGame(&gameState, deltaTime);
+                renderGame(&gameState);
+                break;
+                
+            case PAUSE_STATE:
+                handlePauseInput(&gameState);
+                renderPause(&gameState);
+                break;
+        }
     }
     
     // Close Raylib
@@ -127,6 +193,7 @@ void initGameState(GameState* state) {
     state->fireTimer = 0.0f;
     state->running = true;
     state->Debug = false;
+    state->screenState = MENU_STATE; // Default to menu state
     
     // Initialize camera
     state->camera.zoom = 1.0f;
@@ -163,6 +230,12 @@ void initGameState(GameState* state) {
 }
 
 void handleInput(GameState* state) {
+    // Check for pause
+    if (IsKeyPressed(KEY_P)) {
+        state->screenState = PAUSE_STATE;
+        return; // Skip other input handling when pausing
+    }
+    
     // Get mouse position in world space
     Vector2 mousePosition = GetScreenToWorld2D(GetMousePosition(), state->camera);
     
@@ -847,4 +920,205 @@ void emitParticles(GameState* state, int count) {
             }
         }
     }
+}
+
+void handleMenuInput(GameState* state) {
+    Vector2 mousePoint = GetMousePosition();
+    
+    // Check if mouse is over the Play button
+    bool isMouseOverPlayButton = CheckCollisionPointRec(mousePoint, state->playButton);
+    
+    // Check if mouse is over the Quit button
+    bool isMouseOverQuitButton = CheckCollisionPointRec(mousePoint, state->quitButton);
+    
+    // Change to game state if play button is clicked
+    if (isMouseOverPlayButton && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        state->screenState = GAME_STATE;
+    }
+    
+    // Exit the game if quit button is clicked
+    if (isMouseOverQuitButton && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        state->running = false;
+    }
+}
+
+void renderMenu(const GameState* state) {
+    BeginDrawing();
+    
+    // Clear screen with a very dark background for space
+    ClearBackground((Color){5, 5, 15, 255});
+    
+    // Draw title
+    const char* title = "ASTEROIDS";
+    int titleWidth = MeasureText(title, TITLE_FONT_SIZE);
+    DrawText(title, WINDOW_WIDTH/2 - titleWidth/2, WINDOW_HEIGHT/4, TITLE_FONT_SIZE, WHITE);
+    
+    // Draw play button
+    Vector2 mousePoint = GetMousePosition();
+    bool isMouseOverPlayButton = CheckCollisionPointRec(mousePoint, state->playButton);
+    
+    Color playButtonColor = isMouseOverPlayButton ? GREEN : DARKGREEN;
+    DrawRectangleRec(state->playButton, playButtonColor);
+    DrawRectangleLinesEx(state->playButton, 2, WHITE);
+    
+    // Draw play button text
+    const char* playButtonText = "PLAY";
+    int playButtonTextWidth = MeasureText(playButtonText, BUTTON_FONT_SIZE);
+    DrawText(
+        playButtonText,
+        state->playButton.x + state->playButton.width/2 - playButtonTextWidth/2,
+        state->playButton.y + state->playButton.height/2 - BUTTON_FONT_SIZE/2,
+        BUTTON_FONT_SIZE,
+        WHITE
+    );
+    
+    // Draw quit button
+    bool isMouseOverQuitButton = CheckCollisionPointRec(mousePoint, state->quitButton);
+    
+    Color quitButtonColor = isMouseOverQuitButton ? RED : MAROON;
+    DrawRectangleRec(state->quitButton, quitButtonColor);
+    DrawRectangleLinesEx(state->quitButton, 2, WHITE);
+    
+    // Draw quit button text
+    const char* quitButtonText = "QUIT";
+    int quitButtonTextWidth = MeasureText(quitButtonText, BUTTON_FONT_SIZE);
+    DrawText(
+        quitButtonText,
+        state->quitButton.x + state->quitButton.width/2 - quitButtonTextWidth/2,
+        state->quitButton.y + state->quitButton.height/2 - BUTTON_FONT_SIZE/2,
+        BUTTON_FONT_SIZE,
+        WHITE
+    );
+    
+    // Draw instructions
+    DrawText("Use WASD to move, Mouse to aim and shoot", 
+             WINDOW_WIDTH/2 - MeasureText("Use WASD to move, Mouse to aim and shoot", 20)/2,
+             WINDOW_HEIGHT - 150, 20, LIGHTGRAY);
+    DrawText("Press R to reload", 
+             WINDOW_WIDTH/2 - MeasureText("Press R to reload", 20)/2,
+             WINDOW_HEIGHT - 120, 20, LIGHTGRAY);
+    DrawText("Press ESC to pause", 
+             WINDOW_WIDTH/2 - MeasureText("Press P to pause", 20)/2,
+             WINDOW_HEIGHT - 90, 20, LIGHTGRAY);
+    
+    EndDrawing();
+}
+
+void handlePauseInput(GameState* state) {
+    Vector2 mousePoint = GetMousePosition();
+    
+    // Check if mouse is over the Resume button
+    bool isMouseOverResumeButton = CheckCollisionPointRec(mousePoint, state->resumeButton);
+    
+    // Check if mouse is over the Quit button
+    bool isMouseOverQuitButton = CheckCollisionPointRec(mousePoint, state->quitButton);
+    
+    // Resume the game if resume button is clicked
+    if (isMouseOverResumeButton && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        state->screenState = GAME_STATE;
+    }
+    
+    // Exit the game if quit button is clicked
+    if (isMouseOverQuitButton && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        state->running = false;
+    }
+    
+    // Also check for P key to resume
+    if (IsKeyPressed(KEY_P)) {
+        state->screenState = GAME_STATE;
+    }
+}
+
+void renderPause(const GameState* state) {
+    // First, render the game underneath to show what's paused
+    BeginDrawing();
+    
+    // Begin camera rendering
+    BeginMode2D(state->camera);
+    
+    // Draw map boundaries
+    DrawRectangleLines(0, 0, MAP_WIDTH, MAP_HEIGHT, BOUNDARY_COLOR);
+    
+    // Draw grid lines
+    for (int i = 0; i < MAP_WIDTH; i += 200) {
+        DrawLine(i, 0, i, MAP_HEIGHT, (Color){20, 20, 40, 100});
+    }
+    for (int i = 0; i < MAP_HEIGHT; i += 200) {
+        DrawLine(0, i, MAP_WIDTH, i, (Color){20, 20, 40, 100});
+    }
+    
+    // Draw particles
+    renderParticles(state);
+    
+    // Draw ship
+    renderGameObject(&state->ship.base, 3, state);
+    
+    // Draw bullets
+    for (int i = 0; i < MAX_BULLETS; i++) {
+        if (state->bullets[i].active) {
+            DrawRectangle(
+                state->bullets[i].x - state->bullets[i].radius, 
+                state->bullets[i].y - state->bullets[i].radius, 
+                state->bullets[i].radius * 2, 
+                state->bullets[i].radius * 2, 
+                YELLOW
+            );
+        }
+    }
+    
+    // Draw asteroids
+    for (int i = 0; i < MAX_ASTEROIDS; i++) {
+        if (state->asteroids[i].base.active) {
+            renderGameObject(&state->asteroids[i].base, 8, state); // Draw as octagon
+        }
+    }
+    
+    EndMode2D();
+    
+    // Draw semi-transparent overlay to darken the paused game
+    DrawRectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, (Color){0, 0, 0, 150});
+    
+    // Draw pause title
+    const char* pauseTitle = "PAUSED";
+    int pauseTitleWidth = MeasureText(pauseTitle, TITLE_FONT_SIZE);
+    DrawText(pauseTitle, WINDOW_WIDTH/2 - pauseTitleWidth/2, WINDOW_HEIGHT/4, TITLE_FONT_SIZE, WHITE);
+    
+    // Draw resume button
+    Vector2 mousePoint = GetMousePosition();
+    bool isMouseOverResumeButton = CheckCollisionPointRec(mousePoint, state->resumeButton);
+    
+    Color resumeButtonColor = isMouseOverResumeButton ? GREEN : DARKGREEN;
+    DrawRectangleRec(state->resumeButton, resumeButtonColor);
+    DrawRectangleLinesEx(state->resumeButton, 2, WHITE);
+    
+    // Draw resume button text
+    const char* resumeButtonText = "RESUME";
+    int resumeButtonTextWidth = MeasureText(resumeButtonText, BUTTON_FONT_SIZE);
+    DrawText(
+        resumeButtonText,
+        state->resumeButton.x + state->resumeButton.width/2 - resumeButtonTextWidth/2,
+        state->resumeButton.y + state->resumeButton.height/2 - BUTTON_FONT_SIZE/2,
+        BUTTON_FONT_SIZE,
+        WHITE
+    );
+    
+    // Draw quit button
+    bool isMouseOverQuitButton = CheckCollisionPointRec(mousePoint, state->quitButton);
+    
+    Color quitButtonColor = isMouseOverQuitButton ? RED : MAROON;
+    DrawRectangleRec(state->quitButton, quitButtonColor);
+    DrawRectangleLinesEx(state->quitButton, 2, WHITE);
+    
+    // Draw quit button text
+    const char* quitButtonText = "QUIT";
+    int quitButtonTextWidth = MeasureText(quitButtonText, BUTTON_FONT_SIZE);
+    DrawText(
+        quitButtonText,
+        state->quitButton.x + state->quitButton.width/2 - quitButtonTextWidth/2,
+        state->quitButton.y + state->quitButton.height/2 - BUTTON_FONT_SIZE/2,
+        BUTTON_FONT_SIZE,
+        WHITE
+    );
+    
+    EndDrawing();
 }
