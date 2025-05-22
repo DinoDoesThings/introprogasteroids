@@ -28,7 +28,7 @@
 #define RELOAD_TIME 10.0f
 #define FIRE_RATE 0.2f  // Time between shots in seconds
 #define BUTTON_WIDTH 200
-#define BUTTON_HEIGHT 60
+#define BUTTON_HEIGHT 50
 #define TITLE_FONT_SIZE 60
 #define BUTTON_FONT_SIZE 30
 
@@ -997,7 +997,7 @@ void renderMenu(const GameState* state) {
     DrawText("Press R to reload", 
              WINDOW_WIDTH/2 - MeasureText("Press R to reload", 20)/2,
              WINDOW_HEIGHT - 120, 20, LIGHTGRAY);
-    DrawText("Press ESC to pause", 
+    DrawText("Press P to pause", 
              WINDOW_WIDTH/2 - MeasureText("Press P to pause", 20)/2,
              WINDOW_HEIGHT - 90, 20, LIGHTGRAY);
     
