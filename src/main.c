@@ -31,6 +31,12 @@
 #define BUTTON_HEIGHT 50
 #define TITLE_FONT_SIZE 60
 #define BUTTON_FONT_SIZE 30
+#define MAX_SOUNDS 5  // Maximum number of sounds we'll load
+#define SOUND_SHOOT 0
+#define SOUND_RELOAD_START 1
+#define SOUND_RELOAD_FINISH 2
+#define SOUND_ASTEROID_HIT 3
+#define SOUND_SHIP_HIT 4
 
 typedef struct {
     float x, y;
@@ -85,6 +91,8 @@ typedef struct {
     Rectangle quitButton;
     Rectangle resumeButton;
     bool windowFocused;
+    Sound sounds[MAX_SOUNDS];
+    bool soundLoaded;
 } GameState;
 
 // Function prototypes
@@ -105,6 +113,7 @@ void handleMenuInput(GameState* state);
 void renderMenu(const GameState* state);
 void handlePauseInput(GameState* state);
 void renderPause(const GameState* state);
+void loadSounds(GameState* state);
 
 int main(int argc, char* argv[]) {
     // Initialize random seed
@@ -146,6 +155,9 @@ int main(int argc, char* argv[]) {
     gameState.screenState = MENU_STATE;
     gameState.windowFocused = true;
     
+    // Load sounds
+    loadSounds(&gameState);
+    
     // Game loop
     while (!WindowShouldClose() && gameState.running) {
         float deltaTime = GetFrameTime();
@@ -177,6 +189,14 @@ int main(int argc, char* argv[]) {
         }
     }
     
+    // Clean up sound resources
+    if (gameState.soundLoaded) {
+        for (int i = 0; i < MAX_SOUNDS; i++) {
+            UnloadSound(gameState.sounds[i]);
+        }
+        CloseAudioDevice();
+    }
+    
     // Close Raylib
     CloseWindow();
     return 0;
@@ -193,7 +213,11 @@ void initGameState(GameState* state) {
     state->fireTimer = 0.0f;
     state->running = true;
     state->Debug = false;
-    state->screenState = MENU_STATE; // Default to menu state
+    state->screenState = MENU_STATE;
+    state->soundLoaded = false;
+    
+    // Load sounds
+    loadSounds(state);
     
     // Initialize camera
     state->camera.zoom = 1.0f;
@@ -290,6 +314,11 @@ void handleInput(GameState* state) {
         if (!state->isReloading && state->currentAmmo < MAX_AMMO) {
             state->isReloading = true;
             state->reloadTimer = RELOAD_TIME;
+            
+            // Play reload start sound
+            if (state->soundLoaded) {
+                PlaySound(state->sounds[SOUND_RELOAD_START]);
+            }
         }
     }
 
@@ -335,6 +364,11 @@ void updateGame(GameState* state, float deltaTime) {
         if (state->reloadTimer <= 0) {
             state->isReloading = false;
             state->currentAmmo = MAX_AMMO;
+            
+            // Play reload finish sound
+            if (state->soundLoaded) {
+                PlaySound(state->sounds[SOUND_RELOAD_FINISH]);
+            }
         }
     }
     
@@ -787,6 +821,11 @@ void fireWeapon(GameState* state) {
             state->bullets[i].dx = dx * BULLET_SPEED;
             state->bullets[i].dy = dy * BULLET_SPEED;
             
+            // Play shooting sound effect
+            if (state->soundLoaded) {
+                PlaySound(state->sounds[SOUND_SHOOT]);
+            }
+            
             // Decrease ammo
             state->currentAmmo--;
             
@@ -794,6 +833,11 @@ void fireWeapon(GameState* state) {
             if (state->currentAmmo <= 0) {
                 state->isReloading = true;
                 state->reloadTimer = RELOAD_TIME;
+                
+                // Play reload start sound
+                if (state->soundLoaded) {
+                    PlaySound(state->sounds[SOUND_RELOAD_START]);
+                }
             }
             
             // Only fire one bullet at a time
@@ -1121,4 +1165,20 @@ void renderPause(const GameState* state) {
     );
     
     EndDrawing();
+}
+
+void loadSounds(GameState* state) {
+    if (state->soundLoaded) return;
+    
+    // Initialize audio device
+    InitAudioDevice();
+    
+    // Load sound effects
+    state->sounds[SOUND_SHOOT] = LoadSound("resources/shoot.wav");
+    state->sounds[SOUND_RELOAD_START] = LoadSound("resources/reload_start.wav");
+    state->sounds[SOUND_RELOAD_FINISH] = LoadSound("resources/reload_finish.wav");
+    state->sounds[SOUND_ASTEROID_HIT] = LoadSound("resources/asteroid_hit.wav");
+    state->sounds[SOUND_SHIP_HIT] = LoadSound("resources/ship_hit.wav");
+    
+    state->soundLoaded = true;
 }
