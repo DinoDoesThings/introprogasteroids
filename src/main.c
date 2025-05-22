@@ -31,12 +31,35 @@
 #define BUTTON_HEIGHT 50
 #define TITLE_FONT_SIZE 60
 #define BUTTON_FONT_SIZE 30
-#define MAX_SOUNDS 5  // Maximum number of sounds we'll load
+#define MAX_ENEMIES 10
+#define TANK_ENEMY_RADIUS 25.0f
+#define TANK_ENEMY_SPEED 0.7f
+#define TANK_ENEMY_HEALTH 100
+#define TANK_ENEMY_BULLET_DAMAGE 40
+#define TANK_ENEMY_FIRE_RATE 2.0f
+#define TANK_ENEMY_SCORE 500
+#define SCOUT_ENEMY_RADIUS 12.0f
+#define SCOUT_ENEMY_SPEED 3.5f
+#define SCOUT_ENEMY_HEALTH 30
+#define SCOUT_ENEMY_BULLET_DAMAGE 5
+#define SCOUT_ENEMY_FIRE_RATE 0.1f
+#define SCOUT_ENEMY_BURST_COUNT 5
+#define SCOUT_ENEMY_BURST_DELAY 0.1f
+#define SCOUT_ENEMY_SCORE 300
+#define ENEMY_BULLET_SPEED 6.0f
+#define MAX_ENEMY_BULLETS 50
+#define ENEMY_DETECTION_RADIUS 500.0f
+#define ENEMY_SPAWN_TIME 15.0f
+#define SCOUT_ENEMY_ATTACK_DISTANCE 300.0f
+#define TANK_ENEMY_ATTACK_DISTANCE 450.0f
+#define MAX_SOUNDS 7  // Maximum number of sounds we'll load
 #define SOUND_SHOOT 0
 #define SOUND_RELOAD_START 1
 #define SOUND_RELOAD_FINISH 2
 #define SOUND_ASTEROID_HIT 3
 #define SOUND_SHIP_HIT 4
+#define SOUND_ENEMY_SHOOT 5
+#define SOUND_ENEMY_EXPLODE 6
 
 typedef struct {
     float x, y;
@@ -71,6 +94,29 @@ typedef enum {
     PAUSE_STATE
 } GameScreenState;
 
+typedef enum {
+    ENEMY_TANK,
+    ENEMY_SCOUT
+} EnemyType;
+
+typedef struct {
+    GameObject base;
+    EnemyType type;
+    int health;
+    float fireTimer;
+    int burstCount;    // For scout enemy burst fire
+    float burstTimer;
+    bool isBursting;
+    float moveAngle;   // Angle for movement direction
+    float moveTimer;   // Timer for changing movement direction
+} Enemy;
+
+typedef struct {
+    GameObject base;
+    int damage;
+    bool isPlayerBullet; // To distinguish player bullets from enemy bullets
+} Bullet;
+
 typedef struct {
     Ship ship;
     GameObject bullets[MAX_BULLETS];
@@ -93,6 +139,9 @@ typedef struct {
     bool windowFocused;
     Sound sounds[MAX_SOUNDS];
     bool soundLoaded;
+    Enemy enemies[MAX_ENEMIES];
+    Bullet enemyBullets[MAX_ENEMY_BULLETS];
+    float enemySpawnTimer;
 } GameState;
 
 // Function prototypes
@@ -114,6 +163,10 @@ void renderMenu(const GameState* state);
 void handlePauseInput(GameState* state);
 void renderPause(const GameState* state);
 void loadSounds(GameState* state);
+void spawnEnemy(GameState* state, EnemyType type);
+void updateEnemies(GameState* state, float deltaTime);
+void renderEnemies(const GameState* state);
+void fireEnemyWeapon(GameState* state, Enemy* enemy);
 
 int main(int argc, char* argv[]) {
     // Initialize random seed
@@ -248,6 +301,18 @@ void initGameState(GameState* state) {
     for (int i = 0; i < MAX_PARTICLES; i++) {
         state->particles[i].active = false;
     }
+    
+    // Initialize enemies
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        state->enemies[i].base.active = false;
+    }
+    
+    // Initialize enemy bullets
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
+        state->enemyBullets[i].base.active = false;
+    }
+    
+    state->enemySpawnTimer = ENEMY_SPAWN_TIME;
     
     // Create initial asteroids
     createAsteroids(state, 10);
@@ -533,6 +598,9 @@ void updateGame(GameState* state, float deltaTime) {
     
     // Update particles
     updateParticles(state, deltaTime);
+    
+    // Update enemies
+    updateEnemies(state, deltaTime);
 }
 
 void renderGame(const GameState* state) {
@@ -581,6 +649,9 @@ void renderGame(const GameState* state) {
             renderGameObject(&state->asteroids[i].base, 8, state); // Draw as octagon
         }
     }
+    
+    // Draw enemies
+    renderEnemies(state);
     
     // Draw aiming guide
     Vector2 mousePosition = GetScreenToWorld2D(GetMousePosition(), state->camera);
@@ -1117,6 +1188,9 @@ void renderPause(const GameState* state) {
         }
     }
     
+    // Draw enemies
+    renderEnemies(state);
+    
     EndMode2D();
     
     // Draw semi-transparent overlay to darken the paused game
@@ -1179,6 +1253,407 @@ void loadSounds(GameState* state) {
     state->sounds[SOUND_RELOAD_FINISH] = LoadSound("resources/reload_finish.wav");
     state->sounds[SOUND_ASTEROID_HIT] = LoadSound("resources/asteroid_hit.wav");
     state->sounds[SOUND_SHIP_HIT] = LoadSound("resources/ship_hit.wav");
+    state->sounds[SOUND_ENEMY_SHOOT] = LoadSound("resources/enemy_shoot.wav");
+    state->sounds[SOUND_ENEMY_EXPLODE] = LoadSound("resources/enemy_explode.wav");
     
     state->soundLoaded = true;
+}
+
+void spawnEnemy(GameState* state, EnemyType type) {
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (!state->enemies[i].base.active) {
+            state->enemies[i].base.active = true;
+            state->enemies[i].type = type;
+            state->enemies[i].fireTimer = 0.0f;
+            state->enemies[i].burstCount = 0;
+            state->enemies[i].burstTimer = 0.0f;
+            state->enemies[i].isBursting = false;
+            state->enemies[i].moveTimer = GetRandomValue(3, 6);
+            state->enemies[i].moveAngle = GetRandomValue(0, 359) * PI / 180.0f;
+            
+            // Set enemy properties based on type
+            if (type == ENEMY_TANK) {
+                state->enemies[i].base.radius = TANK_ENEMY_RADIUS;
+                state->enemies[i].health = TANK_ENEMY_HEALTH;
+            } else {
+                state->enemies[i].base.radius = SCOUT_ENEMY_RADIUS;
+                state->enemies[i].health = SCOUT_ENEMY_HEALTH;
+            }
+            
+            // Spawn enemies away from the player
+            do {
+                state->enemies[i].base.x = GetRandomValue(
+                    state->enemies[i].base.radius, 
+                    MAP_WIDTH - state->enemies[i].base.radius
+                );
+                
+                state->enemies[i].base.y = GetRandomValue(
+                    state->enemies[i].base.radius, 
+                    MAP_HEIGHT - state->enemies[i].base.radius
+                );
+                
+            } while (sqrt(pow(state->enemies[i].base.x - state->ship.base.x, 2) + 
+                         pow(state->enemies[i].base.y - state->ship.base.y, 2)) < 400);
+            
+            break;
+        }
+    }
+}
+
+void updateEnemies(GameState* state, float deltaTime) {
+    // Update enemy spawn timer
+    state->enemySpawnTimer -= deltaTime;
+    if (state->enemySpawnTimer <= 0) {
+        // Spawn either a tank or scout enemy
+        EnemyType type = (GetRandomValue(0, 1) == 0) ? ENEMY_TANK : ENEMY_SCOUT;
+        spawnEnemy(state, type);
+        
+        // Reset timer with some randomness
+        state->enemySpawnTimer = ENEMY_SPAWN_TIME + GetRandomValue(-3, 3);
+    }
+    
+    // Update each enemy
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (state->enemies[i].base.active) {
+            Enemy* enemy = &state->enemies[i];
+            
+            // Calculate distance to player
+            float dx = state->ship.base.x - enemy->base.x;
+            float dy = state->ship.base.y - enemy->base.y;
+            float distanceToPlayer = sqrt(dx * dx + dy * dy);
+            
+            // Calculate angle to player
+            float angleToPlayer = atan2(dx, -dy) * 180.0f / PI;
+            enemy->base.angle = angleToPlayer;
+            
+            // Update movement based on enemy type
+            if (enemy->type == ENEMY_TANK) {
+                // Tank moves directly toward player when in detection range
+                if (distanceToPlayer < ENEMY_DETECTION_RADIUS) {
+                    // Move slowly toward player
+                    if (distanceToPlayer > TANK_ENEMY_ATTACK_DISTANCE) {
+                        enemy->base.dx = TANK_ENEMY_SPEED * sin(angleToPlayer * PI / 180.0f);
+                        enemy->base.dy = -TANK_ENEMY_SPEED * cos(angleToPlayer * PI / 180.0f);
+                    } else {
+                        // Stop when at attack distance
+                        enemy->base.dx *= 0.9f;
+                        enemy->base.dy *= 0.9f;
+                    }
+                    
+                    // Fire at player when close enough
+                    enemy->fireTimer -= deltaTime;
+                    if (enemy->fireTimer <= 0 && distanceToPlayer < ENEMY_DETECTION_RADIUS) {
+                        fireEnemyWeapon(state, enemy);
+                        enemy->fireTimer = TANK_ENEMY_FIRE_RATE;
+                    }
+                } else {
+                    // Random movement when player not detected
+                    enemy->moveTimer -= deltaTime;
+                    if (enemy->moveTimer <= 0) {
+                        enemy->moveAngle = GetRandomValue(0, 359) * PI / 180.0f;
+                        enemy->moveTimer = GetRandomValue(3, 6);
+                    }
+                    
+                    enemy->base.dx = TANK_ENEMY_SPEED * 0.5f * cos(enemy->moveAngle);
+                    enemy->base.dy = TANK_ENEMY_SPEED * 0.5f * sin(enemy->moveAngle);
+                }
+            } else {  // ENEMY_SCOUT
+                // Scout has more complex movement
+                if (distanceToPlayer < ENEMY_DETECTION_RADIUS) {
+                    // Approach to attack distance
+                    if (distanceToPlayer > SCOUT_ENEMY_ATTACK_DISTANCE * 1.5f) {
+                        enemy->base.dx = SCOUT_ENEMY_SPEED * sin(angleToPlayer * PI / 180.0f);
+                        enemy->base.dy = -SCOUT_ENEMY_SPEED * cos(angleToPlayer * PI / 180.0f);
+                    } 
+                    // Circle the player at attack distance
+                    else if (distanceToPlayer > SCOUT_ENEMY_ATTACK_DISTANCE * 0.8f) {
+                        // Calculate perpendicular angle for circling
+                        float circlingAngle = angleToPlayer + 90.0f; 
+                        if (GetRandomValue(0, 1) == 0) {
+                            circlingAngle = angleToPlayer - 90.0f;  // Randomize circle direction
+                        }
+                        circlingAngle *= PI / 180.0f;
+                        
+                        enemy->base.dx = SCOUT_ENEMY_SPEED * cos(circlingAngle);
+                        enemy->base.dy = SCOUT_ENEMY_SPEED * sin(circlingAngle);
+                    }
+                    // Back away if too close
+                    else {
+                        enemy->base.dx = -SCOUT_ENEMY_SPEED * sin(angleToPlayer * PI / 180.0f);
+                        enemy->base.dy = SCOUT_ENEMY_SPEED * cos(angleToPlayer * PI / 180.0f);
+                    }
+                    
+                    // Burst fire logic
+                    if (!enemy->isBursting) {
+                        enemy->fireTimer -= deltaTime;
+                        if (enemy->fireTimer <= 0 && distanceToPlayer < ENEMY_DETECTION_RADIUS) {
+                            enemy->isBursting = true;
+                            enemy->burstCount = 0;
+                            enemy->burstTimer = 0;
+                        }
+                    } else {
+                        enemy->burstTimer -= deltaTime;
+                        if (enemy->burstTimer <= 0) {
+                            fireEnemyWeapon(state, enemy);
+                            enemy->burstCount++;
+                            enemy->burstTimer = SCOUT_ENEMY_BURST_DELAY;
+                            
+                            // End burst after firing enough shots
+                            if (enemy->burstCount >= SCOUT_ENEMY_BURST_COUNT) {
+                                enemy->isBursting = false;
+                                enemy->fireTimer = SCOUT_ENEMY_FIRE_RATE;
+                            }
+                        }
+                    }
+                } else {
+                    // Random fast movement when player not detected
+                    enemy->moveTimer -= deltaTime;
+                    if (enemy->moveTimer <= 0) {
+                        enemy->moveAngle = GetRandomValue(0, 359) * PI / 180.0f;
+                        enemy->moveTimer = GetRandomValue(1, 3);
+                    }
+                    
+                    enemy->base.dx = SCOUT_ENEMY_SPEED * 0.7f * cos(enemy->moveAngle);
+                    enemy->base.dy = SCOUT_ENEMY_SPEED * 0.7f * sin(enemy->moveAngle);
+                }
+            }
+            
+            // Update enemy position with boundary checking
+            float newX = enemy->base.x + enemy->base.dx;
+            float newY = enemy->base.y + enemy->base.dy;
+            
+            if (newX - enemy->base.radius >= 0 && newX + enemy->base.radius <= MAP_WIDTH) {
+                enemy->base.x = newX;
+            } else {
+                enemy->base.dx *= -1;
+                enemy->moveAngle = PI - enemy->moveAngle;
+            }
+            
+            if (newY - enemy->base.radius >= 0 && newY + enemy->base.radius <= MAP_HEIGHT) {
+                enemy->base.y = newY;
+            } else {
+                enemy->base.dy *= -1;
+                enemy->moveAngle = -enemy->moveAngle;
+            }
+            
+            // Check for collisions with player bullets
+            for (int j = 0; j < MAX_BULLETS; j++) {
+                if (state->bullets[j].active && checkCollision(&enemy->base, &state->bullets[j])) {
+                    state->bullets[j].active = false;
+                    enemy->health -= 10;  // Each player bullet deals 10 damage
+                    
+                    if (enemy->health <= 0) {
+                        // Enemy destroyed
+                        enemy->base.active = false;
+                        
+                        // Add score based on enemy type
+                        state->score += (enemy->type == ENEMY_TANK) ? TANK_ENEMY_SCORE : SCOUT_ENEMY_SCORE;
+                        
+                        // Play explosion sound
+                        if (state->soundLoaded) {
+                            PlaySound(state->sounds[SOUND_ENEMY_EXPLODE]);
+                        }
+                        
+                        // Generate explosion particles
+                        for (int k = 0; k < 20; k++) {
+                            for (int p = 0; p < MAX_PARTICLES; p++) {
+                                if (!state->particles[p].active) {
+                                    state->particles[p].active = true;
+                                    state->particles[p].life = PARTICLE_LIFETIME;
+                                    state->particles[p].position.x = enemy->base.x;
+                                    state->particles[p].position.y = enemy->base.y;
+                                    
+                                    float particleAngle = GetRandomValue(0, 359) * PI / 180.0f;
+                                    float particleSpeed = PARTICLE_SPEED * GetRandomValue(50, 150) / 100.0f;
+                                    state->particles[p].velocity.x = cos(particleAngle) * particleSpeed;
+                                    state->particles[p].velocity.y = sin(particleAngle) * particleSpeed;
+                                    
+                                    state->particles[p].radius = GetRandomValue(2, 6);
+                                    
+                                    // Enemy explosion colors - reddish
+                                    state->particles[p].color = (Color){ 
+                                        GetRandomValue(200, 255), 
+                                        GetRandomValue(50, 100),
+                                        GetRandomValue(0, 50),
+                                        255
+                                    };
+                                    
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Update enemy bullets
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
+        if (state->enemyBullets[i].base.active) {
+            state->enemyBullets[i].base.x += state->enemyBullets[i].base.dx;
+            state->enemyBullets[i].base.y += state->enemyBullets[i].base.dy;
+            
+            // Check if bullet is out of bounds
+            if (state->enemyBullets[i].base.x < 0 || state->enemyBullets[i].base.x > MAP_WIDTH || 
+                state->enemyBullets[i].base.y < 0 || state->enemyBullets[i].base.y > MAP_HEIGHT) {
+                state->enemyBullets[i].base.active = false;
+                continue;
+            }
+            
+            // Check for collision with player
+            if (checkCollision(&state->ship.base, &state->enemyBullets[i].base)) {
+                state->enemyBullets[i].base.active = false;
+                state->health -= state->enemyBullets[i].damage;
+                
+                // Play hit sound
+                if (state->soundLoaded) {
+                    PlaySound(state->sounds[SOUND_SHIP_HIT]);
+                }
+                
+                if (state->health <= 0) {
+                    state->lives--;
+                    if (state->lives <= 0) {
+                        printf("Game Over! Final Score: %d\n", state->score);
+                        state->running = false;
+                    } else {
+                        resetShip(state);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void fireEnemyWeapon(GameState* state, Enemy* enemy) {
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
+        if (!state->enemyBullets[i].base.active) {
+            state->enemyBullets[i].base.active = true;
+            
+            // Start the bullet at the enemy's position
+            state->enemyBullets[i].base.x = enemy->base.x;
+            state->enemyBullets[i].base.y = enemy->base.y;
+            state->enemyBullets[i].base.radius = (enemy->type == ENEMY_TANK) ? 4.0f : 2.0f;
+            
+            // Set bullet properties based on enemy type
+            if (enemy->type == ENEMY_TANK) {
+                state->enemyBullets[i].damage = TANK_ENEMY_BULLET_DAMAGE;
+            } else {
+                state->enemyBullets[i].damage = SCOUT_ENEMY_BULLET_DAMAGE;
+            }
+            
+            // Calculate direction to player
+            float dx = state->ship.base.x - enemy->base.x;
+            float dy = state->ship.base.y - enemy->base.y;
+            float length = sqrt(dx * dx + dy * dy);
+            
+            // Add a bit of inaccuracy for scout enemies
+            float inaccuracy = (enemy->type == ENEMY_SCOUT) ? GetRandomValue(-10, 10) * PI / 180.0f : 0;
+            float angle = atan2(dx, -dy) + inaccuracy;
+            
+            // Normalize the direction
+            if (length > 0) {
+                dx = sin(angle);
+                dy = -cos(angle);
+            }
+            
+            // Set bullet velocity
+            float bulletSpeed = ENEMY_BULLET_SPEED;
+            state->enemyBullets[i].base.dx = dx * bulletSpeed;
+            state->enemyBullets[i].base.dy = dy * bulletSpeed;
+            
+            // Play shooting sound effect
+            if (state->soundLoaded) {
+                PlaySound(state->sounds[SOUND_ENEMY_SHOOT]);
+            }
+            
+            break;
+        }
+    }
+}
+
+void renderEnemies(const GameState* state) {
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (state->enemies[i].base.active) {
+            // Draw enemy based on type
+            if (state->enemies[i].type == ENEMY_TANK) {
+                // Draw tank enemy as pentagon with red color
+                Vector2 points[5];
+                for (int j = 0; j < 5; j++) {
+                    float angle = state->enemies[i].base.angle + j * 72.0f;  // 360 / 5 = 72 degrees
+                    float radians = angle * PI / 180.0f;
+                    points[j].x = state->enemies[i].base.x + sin(radians) * state->enemies[i].base.radius;
+                    points[j].y = state->enemies[i].base.y - cos(radians) * state->enemies[i].base.radius;
+                }
+                
+                for (int j = 0; j < 5; j++) {
+                    int next = (j + 1) % 5;
+                    DrawLineV(points[j], points[next], RED);
+                }
+                
+                // Draw a gun barrel pointing toward player
+                float radians = state->enemies[i].base.angle * PI / 180.0f;
+                Vector2 barrelStart = {
+                    state->enemies[i].base.x, 
+                    state->enemies[i].base.y
+                };
+                Vector2 barrelEnd = {
+                    state->enemies[i].base.x + sin(radians) * state->enemies[i].base.radius * 1.5f,
+                    state->enemies[i].base.y - cos(radians) * state->enemies[i].base.radius * 1.5f
+                };
+                DrawLineV(barrelStart, barrelEnd, RED);
+            } else {
+                // Draw scout enemy as triangle with blue color
+                Vector2 points[3];
+                
+                // Front point
+                float radians = state->enemies[i].base.angle * PI / 180.0f;
+                points[0].x = state->enemies[i].base.x + sin(radians) * state->enemies[i].base.radius * 1.5f;
+                points[0].y = state->enemies[i].base.y - cos(radians) * state->enemies[i].base.radius * 1.5f;
+                
+                // Left wing
+                float leftAngle = radians + PI * 0.8f;
+                points[1].x = state->enemies[i].base.x + sin(leftAngle) * state->enemies[i].base.radius;
+                points[1].y = state->enemies[i].base.y - cos(leftAngle) * state->enemies[i].base.radius;
+                
+                // Right wing
+                float rightAngle = radians - PI * 0.8f;
+                points[2].x = state->enemies[i].base.x + sin(rightAngle) * state->enemies[i].base.radius;
+                points[2].y = state->enemies[i].base.y - cos(rightAngle) * state->enemies[i].base.radius;
+                
+                // Draw the lines
+                DrawLineV(points[0], points[1], SKYBLUE);
+                DrawLineV(points[1], points[2], SKYBLUE);
+                DrawLineV(points[2], points[0], SKYBLUE);
+            }
+            
+            // Draw health bar above enemy
+            if (state->Debug) {
+                int barWidth = state->enemies[i].base.radius * 2;
+                int barHeight = 5;
+                int barX = state->enemies[i].base.x - barWidth / 2;
+                int barY = state->enemies[i].base.y - state->enemies[i].base.radius - 12;
+                
+                float maxHealth = (state->enemies[i].type == ENEMY_TANK) ? TANK_ENEMY_HEALTH : SCOUT_ENEMY_HEALTH;
+                float healthPercent = (float)state->enemies[i].health / maxHealth;
+                int currentHealthWidth = (int)(barWidth * healthPercent);
+                
+                // Background of health bar
+                DrawRectangle(barX, barY, barWidth, barHeight, DARKGRAY);
+                
+                // Filled part of health bar
+                Color healthColor = (healthPercent > 0.5f) ? GREEN : RED;
+                DrawRectangle(barX, barY, currentHealthWidth, barHeight, healthColor);
+            }
+        }
+    }
+    
+    // Draw enemy bullets
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
+        if (state->enemyBullets[i].base.active) {
+            Color bulletColor = (state->enemyBullets[i].damage >= TANK_ENEMY_BULLET_DAMAGE) ? RED : BLUE;
+            DrawCircleV((Vector2){state->enemyBullets[i].base.x, state->enemyBullets[i].base.y}, 
+                       state->enemyBullets[i].base.radius, bulletColor);
+        }
+    }
 }
