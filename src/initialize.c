@@ -8,9 +8,58 @@
 #include <string.h>
 
 // Include
-#include "typedef.h"
+#include "typedefs.h"
 #include "config.h"
 #include "audio.h"
+#include "asteroids.h"
+
+void startWave(GameState* state) {
+    // Clear any remaining asteroids and enemies
+    for (int i = 0; i < MAX_ASTEROIDS; i++) {
+        state->asteroids[i].base.active = false;
+    }
+    
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        state->enemies[i].base.active = false;
+    }
+    
+    // Calculate asteroid count based on wave
+    int asteroidCount = BASE_ASTEROID_COUNT + (state->currentWave - 1) * ASTEROID_INCREMENT;
+    asteroidCount = (asteroidCount <= MAX_ASTEROIDS) ? asteroidCount : MAX_ASTEROIDS;
+    
+    // Create asteroids
+    createAsteroids(state, asteroidCount);
+    
+    // Count active asteroids
+    state->asteroidsRemaining = 0;
+    for (int i = 0; i < MAX_ASTEROIDS; i++) {
+        if (state->asteroids[i].base.active) {
+            state->asteroidsRemaining++;
+        }
+    }
+    
+    // Reset enemy spawn timer based on wave
+    if (state->currentWave >= SCOUT_START_WAVE) {
+        // Enemies should spawn faster in higher waves
+        float spawnTime = ENEMY_SPAWN_TIME - (state->currentWave - SCOUT_START_WAVE) * 1.0f;
+        // Ensure spawn time doesn't go below minimum
+        state->enemySpawnTimer = (spawnTime > 3.0f) ? spawnTime : 3.0f;
+    } else {
+        // No enemies should spawn before their start wave
+        state->enemySpawnTimer = FLT_MAX;
+    }
+    
+    // Display wave message
+    sprintf(state->waveMessage, "WAVE %d", state->currentWave);
+    state->waveMessageTimer = 3.0f;  // Show message for 3 seconds
+    
+    // Debug output to verify wave transition
+    if (state->Debug) {
+        printf("Starting Wave %d with %d asteroids\n", state->currentWave, asteroidCount);
+    }
+    
+    state->inWaveTransition = false;
+}
 
 void initGameState(GameState* state) {
     // Initialize to default values
@@ -175,50 +224,3 @@ void resetShip(GameState* state) {
     state->blinkTimer = 0.0f;
 }
 
-void startWave(GameState* state) {
-    // Clear any remaining asteroids and enemies
-    for (int i = 0; i < MAX_ASTEROIDS; i++) {
-        state->asteroids[i].base.active = false;
-    }
-    
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-        state->enemies[i].base.active = false;
-    }
-    
-    // Calculate asteroid count based on wave
-    int asteroidCount = BASE_ASTEROID_COUNT + (state->currentWave - 1) * ASTEROID_INCREMENT;
-    asteroidCount = (asteroidCount <= MAX_ASTEROIDS) ? asteroidCount : MAX_ASTEROIDS;
-    
-    // Create asteroids
-    createAsteroids(state, asteroidCount);
-    
-    // Count active asteroids
-    state->asteroidsRemaining = 0;
-    for (int i = 0; i < MAX_ASTEROIDS; i++) {
-        if (state->asteroids[i].base.active) {
-            state->asteroidsRemaining++;
-        }
-    }
-    
-    // Reset enemy spawn timer based on wave
-    if (state->currentWave >= SCOUT_START_WAVE) {
-        // Enemies should spawn faster in higher waves
-        float spawnTime = ENEMY_SPAWN_TIME - (state->currentWave - SCOUT_START_WAVE) * 1.0f;
-        // Ensure spawn time doesn't go below minimum
-        state->enemySpawnTimer = (spawnTime > 3.0f) ? spawnTime : 3.0f;
-    } else {
-        // No enemies should spawn before their start wave
-        state->enemySpawnTimer = FLT_MAX;
-    }
-    
-    // Display wave message
-    sprintf(state->waveMessage, "WAVE %d", state->currentWave);
-    state->waveMessageTimer = 3.0f;  // Show message for 3 seconds
-    
-    // Debug output to verify wave transition
-    if (state->Debug) {
-        printf("Starting Wave %d with %d asteroids\n", state->currentWave, asteroidCount);
-    }
-    
-    state->inWaveTransition = false;
-}

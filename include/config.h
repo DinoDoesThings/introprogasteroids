@@ -73,3 +73,5 @@
 #define VERSION_NUMBER "v1.1.0"
 #define INVULNERABILITY_TIME 3.0f    // Invulnerability period in seconds after respawning or getting hit
 #define BLINK_FREQUENCY 0.1f         // How often the ship blinks during invulnerability (in seconds)
+
+#endif // CONFIG_H

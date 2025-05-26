@@ -73,6 +73,7 @@
     "math.h": "c",
     "stdio.h": "c",
     "time.h": "c",
-    "string.h": "c"
+    "string.h": "c",
+    "collisions.h": "c"
   }
 }

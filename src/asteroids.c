@@ -7,7 +7,7 @@
 #include <float.h>
 
 // Include custom headers
-#include "typedef.h"
+#include "typedefs.h"
 #include "config.h"
 
 void createAsteroids(GameState* state, int count) {

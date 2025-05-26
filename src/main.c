@@ -8,10 +8,13 @@
 #include <string.h>
 
 // Include
-#include "typedef.h"
+#include "typedefs.h"
 #include "config.h"
 #include "game.h"
 #include "initialize.h"
+#include "input.h"
+#include "render.h"
+#include "audio.h"
 
 int main(int argc, char* argv[]) {
     // Initialize random seed

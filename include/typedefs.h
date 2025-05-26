@@ -2,6 +2,7 @@
 #define TYPEDEFS_H
 
 #include "config.h"
+#include "raylib.h"
 #include <stdbool.h>
 
 typedef struct {
@@ -106,3 +107,5 @@ typedef struct {
     float blinkTimer;
     bool shipVisible;
 } GameState;
+
+#endif // TYPEDEFS_H

@@ -6,9 +6,7 @@
 #include <float.h>
 
 // custom headers
-#include "typedef.h"
-#include "config.h"
-
+#include "typedefs.h"
 
 bool checkCollision(GameObject* a, GameObject* b) {
     float dx = a->x - b->x;

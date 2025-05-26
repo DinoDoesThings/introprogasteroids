@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 //custom headers
-#include "typedef.h"
+#include "typedefs.h"
 #include "config.h"
 
 void loadSounds(GameState* state) {
