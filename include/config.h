@@ -70,7 +70,7 @@
 #define SLIDER_WIDTH 300
 #define SLIDER_HEIGHT 20
 #define OPTIONS_FONT_SIZE 24
-#define VERSION_NUMBER "v1.1.0"
+#define VERSION_NUMBER "v1.2.0"
 #define INVULNERABILITY_TIME 3.0f    // Invulnerability period in seconds after respawning or getting hit
 #define BLINK_FREQUENCY 0.1f         // How often the ship blinks during invulnerability (in seconds)
 
