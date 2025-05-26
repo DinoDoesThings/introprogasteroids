@@ -69,6 +69,10 @@
     "raylib.h": "c",
     "float.h": "c",
     "config.h": "c",
-    "stdbool.h": "c"
+    "stdbool.h": "c",
+    "math.h": "c",
+    "stdio.h": "c",
+    "time.h": "c",
+    "string.h": "c"
   }
 }

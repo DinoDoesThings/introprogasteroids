@@ -10,6 +10,7 @@
 // Include
 #include "typedef.h"
 #include "config.h"
+#include "audio.h"
 
 void initGameState(GameState* state) {
     // Initialize to default values
