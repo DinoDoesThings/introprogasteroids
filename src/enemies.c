@@ -13,26 +13,32 @@
 #include "asteroids.h"
 #include "collisions.h"
 #include "initialize.h"
+#include "particles.h"
 
 void spawnEnemy(GameState* state, EnemyType type) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         if (!state->enemies[i].base.active) {
             state->enemies[i].base.active = true;
             state->enemies[i].type = type;
+            state->enemies[i].base.angle = 0.0f;
+            state->enemies[i].base.dx = 0.0f;
+            state->enemies[i].base.dy = 0.0f;
             state->enemies[i].fireTimer = 0.0f;
+            state->enemies[i].isBursting = false;
             state->enemies[i].burstCount = 0;
             state->enemies[i].burstTimer = 0.0f;
-            state->enemies[i].isBursting = false;
-            state->enemies[i].moveTimer = GetRandomValue(3, 6);
+            state->enemies[i].moveTimer = 0.0f;
             state->enemies[i].moveAngle = GetRandomValue(0, 359) * PI / 180.0f;
             
             // Set enemy properties based on type
             if (type == ENEMY_TANK) {
                 state->enemies[i].base.radius = TANK_ENEMY_RADIUS;
                 state->enemies[i].health = TANK_ENEMY_HEALTH;
+                state->enemies[i].texture = LoadTexture(TANK_TEXTURE_PATH);
             } else {
                 state->enemies[i].base.radius = SCOUT_ENEMY_RADIUS;
                 state->enemies[i].health = SCOUT_ENEMY_HEALTH;
+                state->enemies[i].texture = LoadTexture(SCOUT_TEXTURE_PATH);
             }
             
             // Spawn enemies away from the player
@@ -98,65 +104,6 @@ void fireEnemyWeapon(GameState* state, Enemy* enemy) {
             }
             
             break;
-        }
-    }
-}
-
-// New function to emit enemy thrust particles
-void emitEnemyThrustParticles(GameState* state, Enemy* enemy, int count) {
-    // Calculate enemy rear position (opposite to facing direction)
-    float radians = enemy->base.angle * PI / 180.0f;
-    float rearX = enemy->base.x - sin(radians) * enemy->base.radius * 1.2f;
-    float rearY = enemy->base.y + cos(radians) * enemy->base.radius * 1.2f;
-    
-    // Emit particles
-    for (int i = 0; i < count; i++) {
-        // Find an inactive particle
-        for (int j = 0; j < MAX_PARTICLES; j++) {
-            if (!state->particles[j].active) {
-                state->particles[j].active = true;
-                state->particles[j].life = PARTICLE_LIFETIME * 0.7f; // Slightly shorter life than player particles
-                
-                // Set particle position at the enemy's rear
-                state->particles[j].position.x = rearX;
-                state->particles[j].position.y = rearY;
-                
-                // Add slight randomness to position
-                state->particles[j].position.x += GetRandomValue(-2, 2);
-                state->particles[j].position.y += GetRandomValue(-2, 2);
-                
-                // Set particle velocity in the opposite direction of the enemy
-                float particleAngle = radians + PI + GetRandomValue(-20, 20) * PI / 180.0f;
-                float particleSpeed = PARTICLE_SPEED * 0.8f;
-                state->particles[j].velocity.x = sin(particleAngle) * particleSpeed;
-                state->particles[j].velocity.y = -cos(particleAngle) * particleSpeed;
-                
-                // Set particle appearance
-                state->particles[j].radius = GetRandomValue(1, 3);
-                
-                // Different colors based on enemy type
-                if (enemy->type == ENEMY_TANK) {
-                    // Red/orange exhaust for tank enemies
-                    int colorChoice = GetRandomValue(0, 2);
-                    if (colorChoice == 0)
-                        state->particles[j].color = (Color){ 255, 100, 50, 255 };  // Red-orange
-                    else if (colorChoice == 1)
-                        state->particles[j].color = (Color){ 255, 50, 20, 255 };   // Reddish
-                    else
-                        state->particles[j].color = (Color){ 255, 150, 50, 255 };  // Orange
-                } else {
-                    // Blue/cyan exhaust for scout enemies
-                    int colorChoice = GetRandomValue(0, 2);
-                    if (colorChoice == 0)
-                        state->particles[j].color = (Color){ 50, 150, 255, 255 };  // Blue
-                    else if (colorChoice == 1)
-                        state->particles[j].color = (Color){ 0, 200, 255, 255 };   // Cyan
-                    else
-                        state->particles[j].color = (Color){ 100, 200, 255, 255 }; // Light blue
-                }
-                
-                break;
-            }
         }
     }
 }
@@ -366,10 +313,11 @@ void updateEnemies(GameState* state, float deltaTime) {
                                     // Add separation force if too close to avoid clipping
                                     if (scoutDist < SCOUT_SEPARATION_RADIUS) {
                                         float separationStrength = 1.0f - (scoutDist / SCOUT_SEPARATION_RADIUS);
+                                        separationStrength = separationStrength * separationStrength; // Square for stronger effect when very close
                                         if (scoutDist < 0.1f) scoutDist = 0.1f; // Avoid division by zero
                                         
-                                        separationForce.x -= (sx / scoutDist) * separationStrength;
-                                        separationForce.y -= (sy / scoutDist) * separationStrength;
+                                        separationForce.x -= (sx / scoutDist) * separationStrength * 2.0f; // Increased multiplier
+                                        separationForce.y -= (sy / scoutDist) * separationStrength * 2.0f; // Increased multiplier
                                     }
                                 }
                             }
@@ -403,21 +351,21 @@ void updateEnemies(GameState* state, float deltaTime) {
                             targetDx = SCOUT_ENEMY_SPEED * sin(angleToPlayer * PI / 180.0f);
                             targetDy = -SCOUT_ENEMY_SPEED * cos(angleToPlayer * PI / 180.0f);
                             
-                            // Calculate formation position based on index within group
-                            float formationOffset = ((i % 3) - 1) * 40.0f; // -40, 0, or +40 units offset
+                            // Calculate formation position based on index within group (increased spacing)
+                            float formationOffset = ((i % 3) - 1) * 60.0f; // Changed from 40.0f to 60.0f units offset
                             float perpAngle = (angleToPlayer + 90.0f) * PI / 180.0f;
                             
-                            // Add perpendicular offset for side-by-side formation
-                            targetDx += formationOffset * cos(perpAngle) * 0.02f;
-                            targetDy += formationOffset * sin(perpAngle) * 0.02f;
+                            // Add perpendicular offset for side-by-side formation (increased multiplier)
+                            targetDx += formationOffset * cos(perpAngle) * 0.03f; // Increased from 0.02f
+                            targetDy += formationOffset * sin(perpAngle) * 0.03f; // Increased from 0.02f
                             
-                            // Add group cohesion
-                            targetDx += groupInfluence.x * SCOUT_ENEMY_SPEED * SCOUT_GROUP_COHESION;
-                            targetDy += groupInfluence.y * SCOUT_ENEMY_SPEED * SCOUT_GROUP_COHESION;
+                            // Add group cohesion (reduced strength)
+                            targetDx += groupInfluence.x * SCOUT_ENEMY_SPEED * SCOUT_GROUP_COHESION * 0.8f; // Reduced from 1.0f
+                            targetDy += groupInfluence.y * SCOUT_ENEMY_SPEED * SCOUT_GROUP_COHESION * 0.8f; // Reduced from 1.0f
                             
-                            // Add separation force to prevent clipping
-                            targetDx += separationForce.x * SCOUT_ENEMY_SPEED * SCOUT_SEPARATION_FORCE;
-                            targetDy += separationForce.y * SCOUT_ENEMY_SPEED * SCOUT_SEPARATION_FORCE;
+                            // Add separation force to prevent clipping (increased strength)
+                            targetDx += separationForce.x * SCOUT_ENEMY_SPEED * SCOUT_SEPARATION_FORCE * 2.0f; // Increased multiplier
+                            targetDy += separationForce.y * SCOUT_ENEMY_SPEED * SCOUT_SEPARATION_FORCE * 2.0f; // Increased multiplier
                             
                             // Add asteroid avoidance
                             if (avoidanceMagnitude > 0) {
@@ -434,7 +382,7 @@ void updateEnemies(GameState* state, float deltaTime) {
                         } 
                         // Circle the player at attack distance, as a group in formation
                         else if (distanceToPlayer > SCOUT_ENEMY_ATTACK_DISTANCE * 0.6f) {
-                            // Calculate position in formation (equally spaced around circle)
+                            // Calculate position in formation (equally spaced around circle with better spacing)
                             float groupIndex = 0;
                             for (int j = 0; j < activeScouts; j++) {
                                 if (scoutIndices[j] == i) {
@@ -443,8 +391,9 @@ void updateEnemies(GameState* state, float deltaTime) {
                                 }
                             }
                             
-                            // Calculate uniform spacing around the player (avoid clumping)
-                            float formationAngle = (360.0f / (groupSize + 1)) * ((int)groupIndex % (groupSize + 1));
+                            // Calculate uniform spacing around the player with better distribution
+                            float divisor = fmaxf(groupSize + 1, 3); 
+                            float formationAngle = (360.0f / divisor) * ((int)groupIndex % (int)divisor); 
                             float circlingDirection = formationAngle;
                             
                             // Calculate the perpendicular angle for smooth circling
@@ -462,12 +411,12 @@ void updateEnemies(GameState* state, float deltaTime) {
                             targetDy -= correction * cos(angleToPlayer * PI / 180.0f);
                             
                             // Add group cohesion, but weaker during attack
-                            targetDx += groupInfluence.x * SCOUT_ENEMY_SPEED * SCOUT_GROUP_COHESION * 0.5f;
-                            targetDy += groupInfluence.y * SCOUT_ENEMY_SPEED * SCOUT_GROUP_COHESION * 0.5f;
+                            targetDx += groupInfluence.x * SCOUT_ENEMY_SPEED * SCOUT_GROUP_COHESION * 0.3f; // Reduced from 0.5f
+                            targetDy += groupInfluence.y * SCOUT_ENEMY_SPEED * SCOUT_GROUP_COHESION * 0.3f; // Reduced from 0.5f
                             
-                            // Add separation force to prevent clipping
-                            targetDx += separationForce.x * SCOUT_ENEMY_SPEED * SCOUT_SEPARATION_FORCE * 1.5f;
-                            targetDy += separationForce.y * SCOUT_ENEMY_SPEED * SCOUT_SEPARATION_FORCE * 1.5f;
+                            // Add separation force to prevent clipping (stronger during circling)
+                            targetDx += separationForce.x * SCOUT_ENEMY_SPEED * SCOUT_SEPARATION_FORCE * 2.5f; // Increased from 1.5f
+                            targetDy += separationForce.y * SCOUT_ENEMY_SPEED * SCOUT_SEPARATION_FORCE * 2.5f; // Increased from 1.5f
                             
                             // Add asteroid avoidance
                             if (avoidanceMagnitude > 0) {
@@ -848,5 +797,16 @@ void updateEnemies(GameState* state, float deltaTime) {
                 }
             }
         }
+    }
+}
+
+float getEnemyTextureScale(EnemyType type) {
+    switch (type) {
+        case ENEMY_TANK:
+            return TANK_TEXTURE_SCALE;
+        case ENEMY_SCOUT:
+            return SCOUT_TEXTURE_SCALE;
+        default:
+            return 1.0f; // Default scale
     }
 }

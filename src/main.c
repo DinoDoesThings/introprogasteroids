@@ -128,12 +128,24 @@ int main(int argc, char* argv[]) {
         }
     }
     
-    // Clean up sound resources
+    // Clean up resources
     if (gameState.soundLoaded) {
         for (int i = 0; i < MAX_SOUNDS; i++) {
             UnloadSound(gameState.sounds[i]);
         }
         CloseAudioDevice();
+    }
+    
+    // Unload ship texture
+    if (gameState.ship.texture.id > 0) {
+        UnloadTexture(gameState.ship.texture);
+    }
+    
+    // Unload enemy textures
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (gameState.enemies[i].texture.id > 0) {
+            UnloadTexture(gameState.enemies[i].texture);
+        }
     }
     
     // Close Raylib

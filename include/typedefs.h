@@ -16,6 +16,7 @@ typedef struct {
 typedef struct {
     GameObject base;
     float rotationSpeed;
+    Texture2D texture;
 } Ship;
 
 typedef struct {
@@ -55,6 +56,7 @@ typedef struct {
     bool isBursting;
     float moveAngle;   // Angle for movement direction
     float moveTimer;   // Timer for changing movement direction
+    Texture2D texture;
 } Enemy;
 
 typedef struct {
@@ -107,5 +109,14 @@ typedef struct {
     float blinkTimer;
     bool shipVisible;
 } GameState;
+
+typedef struct {
+    int minRadius;
+    int maxRadius;
+    float randomRange;
+    float rearOffset;
+    float speedMultiplier;
+    Color colors[3];  // Array of 3 possible colors for variety
+} EnemyParticleConfig;
 
 #endif // TYPEDEFS_H

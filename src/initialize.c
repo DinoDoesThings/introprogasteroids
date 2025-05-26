@@ -91,6 +91,9 @@ void initGameState(GameState* state) {
     // Load sounds
     loadSounds(state);
     
+    // Load ship texture
+    state->ship.texture = LoadTexture(SHIP_TEXTURE_PATH);
+    
     // Initialize camera
     state->camera.zoom = 1.0f;
     state->camera.rotation = 0.0f;
@@ -197,6 +200,21 @@ void resetGameData(GameState* state) {
     // Initialize enemy bullets
     for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
         state->enemyBullets[i].base.active = false;
+    }
+    
+    // Unload enemy textures
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (state->enemies[i].texture.id > 0) {
+            UnloadTexture(state->enemies[i].texture);
+            state->enemies[i].texture = (Texture2D){0}; // Reset texture
+        }
+        state->enemies[i].base.active = false;
+    }
+    
+    // Unload ship texture
+    if (state->ship.texture.id > 0) {
+        UnloadTexture(state->ship.texture);
+        state->ship.texture = (Texture2D){0}; // Reset texture
     }
     
     state->enemySpawnTimer = ENEMY_SPAWN_TIME;

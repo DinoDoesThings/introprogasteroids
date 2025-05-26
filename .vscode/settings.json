@@ -74,6 +74,7 @@
     "stdio.h": "c",
     "time.h": "c",
     "string.h": "c",
-    "collisions.h": "c"
+    "collisions.h": "c",
+    "audio.h": "c"
   }
 }

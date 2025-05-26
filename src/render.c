@@ -10,6 +10,7 @@
 //custom headers
 #include "typedefs.h"
 #include "config.h"
+#include "enemies.h"
 
 void renderGameObject(const GameObject* obj, int sides, const GameState* state) {
     if (sides <= 0 || !obj->active) return;
@@ -19,31 +20,51 @@ void renderGameObject(const GameObject* obj, int sides, const GameState* state) 
         return;
     }
     
-    // Special rendering for the ship (triangle)
+    // Special rendering for the ship (triangle with texture)
     if (sides == 3 && obj == &state->ship.base) {
-        Vector2 points[3];
-        float radians = obj->angle * PI / 180.0f;
+        // Draw ship texture first
+        if (state->ship.texture.id > 0) {
+            // Calculate texture positioning
+            Vector2 origin = { state->ship.texture.width / 2.0f, state->ship.texture.height / 2.0f };
+            Rectangle source = { 0, 0, state->ship.texture.width, state->ship.texture.height };
+            Rectangle dest = { 
+                obj->x, 
+                obj->y, 
+                state->ship.texture.width * SHIP_TEXTURE_SCALE, 
+                state->ship.texture.height * SHIP_TEXTURE_SCALE 
+            };
+            
+            // Draw the ship texture rotated (image is facing north)
+            DrawTexturePro(state->ship.texture, source, dest, origin, obj->angle, WHITE);
+        }
         
-        // Front point (nose of the ship)
-        points[0].x = obj->x + sin(radians) * obj->radius * 1.5f;
-        points[0].y = obj->y - cos(radians) * obj->radius * 1.5f;
-        
-        // Left wing
-        float leftAngle = radians + PI * 0.8f;
-        points[1].x = obj->x + sin(leftAngle) * obj->radius;
-        points[1].y = obj->y - cos(leftAngle) * obj->radius;
-        
-        // Right wing
-        float rightAngle = radians - PI * 0.8f;
-        points[2].x = obj->x + sin(rightAngle) * obj->radius;
-        points[2].y = obj->y - cos(rightAngle) * obj->radius;
-        
-        // Draw the lines
-        DrawLineV(points[0], points[1], GREEN);
-        DrawLineV(points[1], points[2], GREEN);
-        DrawLineV(points[2], points[0], GREEN);
+        // Draw hitbox lines in debug mode or as fallback
+        if (state->Debug || state->ship.texture.id == 0) {
+            Vector2 points[3];
+            float radians = obj->angle * PI / 180.0f;
+            
+            // Front point (nose of the ship)
+            points[0].x = obj->x + sin(radians) * obj->radius * 1.5f;
+            points[0].y = obj->y - cos(radians) * obj->radius * 1.5f;
+            
+            // Left wing
+            float leftAngle = radians + PI * 0.8f;
+            points[1].x = obj->x + sin(leftAngle) * obj->radius;
+            points[1].y = obj->y - cos(leftAngle) * obj->radius;
+            
+            // Right wing
+            float rightAngle = radians - PI * 0.8f;
+            points[2].x = obj->x + sin(rightAngle) * obj->radius;
+            points[2].y = obj->y - cos(rightAngle) * obj->radius;
+            
+            // Draw the hitbox lines (semi-transparent when debug mode is on)
+            Color hitboxColor = state->Debug ? (Color){0, 255, 0, 100} : GREEN;
+            DrawLineV(points[0], points[1], hitboxColor);
+            DrawLineV(points[1], points[2], hitboxColor);
+            DrawLineV(points[2], points[0], hitboxColor);
+        }
     } else {
-        // Regular rendering for other objects
+        // Regular rendering for other objects (asteroids, enemies)
         Vector2 points[sides];
         for (int i = 0; i < sides; i++) {
             float angle = obj->angle + i * (360.0f / sides);
@@ -123,65 +144,95 @@ void renderEnemies(const GameState* state) {
                 );
             }
             
-            // Draw enemy based on type
-            if (state->enemies[i].type == ENEMY_TANK) {
-                // Draw tank enemy as pentagon with red color
-                Vector2 points[5];
-                for (int j = 0; j < 5; j++) {
-                    float angle = state->enemies[i].base.angle + j * 72.0f;  //  360 / 5 = 72 degrees
-                    float radians = angle * PI / 180.0f;
-                    points[j].x = state->enemies[i].base.x + sin(radians) * state->enemies[i].base.radius;
-                    points[j].y = state->enemies[i].base.y - cos(radians) * state->enemies[i].base.radius;
-                }
+            // Draw enemy texture
+            if (state->enemies[i].texture.id > 0) {
+                // Get appropriate scale based on enemy type
+                float textureScale = getEnemyTextureScale(state->enemies[i].type);
                 
-                for (int j = 0; j < 5; j++) {
-                    int next = (j + 1) % 5;
-                    DrawLineV(points[j], points[next], RED);
-                }
+                // Calculate scaled dimensions
+                float scaledWidth = state->enemies[i].texture.width * textureScale;
+                float scaledHeight = state->enemies[i].texture.height * textureScale;
                 
-                // Draw a gun barrel pointing toward player
-                float radians = state->enemies[i].base.angle * PI / 180.0f;
-                Vector2 barrelStart = {
+                // Calculate texture positioning with proper centering
+                Vector2 origin = { scaledWidth / 2.0f, scaledHeight / 2.0f };
+                Rectangle source = { 0, 0, state->enemies[i].texture.width, state->enemies[i].texture.height };
+                Rectangle dest = { 
                     state->enemies[i].base.x, 
-                    state->enemies[i].base.y
+                    state->enemies[i].base.y, 
+                    scaledWidth, 
+                    scaledHeight 
                 };
-                Vector2 barrelEnd = {
-                    state->enemies[i].base.x + sin(radians) * state->enemies[i].base.radius * 1.5f,
-                    state->enemies[i].base.y - cos(radians) * state->enemies[i].base.radius * 1.5f
-                };
-                DrawLineV(barrelStart, barrelEnd, RED);
-            } else {
-                // Draw scout enemy as triangle with blue color
-                Vector2 points[3];
                 
-                // Front point
-                float radians = state->enemies[i].base.angle * PI / 180.0f;
-                points[0].x = state->enemies[i].base.x + sin(radians) * state->enemies[i].base.radius * 1.5f;
-                points[0].y = state->enemies[i].base.y - cos(radians) * state->enemies[i].base.radius * 1.5f;
-                
-                // Left wing
-                float leftAngle = radians + PI * 0.8f;
-                points[1].x = state->enemies[i].base.x + sin(leftAngle) * state->enemies[i].base.radius;
-                points[1].y = state->enemies[i].base.y - cos(leftAngle) * state->enemies[i].base.radius;
-                
-                // Right wing
-                float rightAngle = radians - PI * 0.8f;
-                points[2].x = state->enemies[i].base.x + sin(rightAngle) * state->enemies[i].base.radius;
-                points[2].y = state->enemies[i].base.y - cos(rightAngle) * state->enemies[i].base.radius;
-                
-                // Draw the lines
-                DrawLineV(points[0], points[1], SKYBLUE);
-                DrawLineV(points[1], points[2], SKYBLUE);
-                DrawLineV(points[2], points[0], SKYBLUE);
-                
-                // If in debug mode, add an indicator for scouts that want to group
-                if (state->Debug && (i % 100 < SCOUT_GROUP_CHANCE)) {
-                    // Draw small dot on scouts that want to group
-                    DrawCircleV(
-                        (Vector2){state->enemies[i].base.x, state->enemies[i].base.y},
-                        3.0f,
-                        (Color){0, 255, 255, 200}
-                    );
+                // Draw the enemy texture rotated (images are facing north)
+                DrawTexturePro(state->enemies[i].texture, source, dest, origin, state->enemies[i].base.angle, WHITE);
+            }
+            
+            // Draw hitbox lines in debug mode or as fallback
+            if (state->Debug || state->enemies[i].texture.id == 0) {
+                // Draw enemy based on type
+                if (state->enemies[i].type == ENEMY_TANK) {
+                    // Draw tank enemy as pentagon with red color
+                    Vector2 points[5];
+                    for (int j = 0; j < 5; j++) {
+                        float angle = state->enemies[i].base.angle + j * 72.0f;  //  360 / 5 = 72 degrees
+                        float radians = angle * PI / 180.0f;
+                        points[j].x = state->enemies[i].base.x + sin(radians) * state->enemies[i].base.radius;
+                        points[j].y = state->enemies[i].base.y - cos(radians) * state->enemies[i].base.radius;
+                    }
+                    
+                    Color hitboxColor = state->Debug ? (Color){255, 0, 0, 100} : RED;
+                    for (int j = 0; j < 5; j++) {
+                        int next = (j + 1) % 5;
+                        DrawLineV(points[j], points[next], hitboxColor);
+                    }
+                    
+                    // Draw a gun barrel pointing toward player (debug only)
+                    if (state->Debug) {
+                        float radians = state->enemies[i].base.angle * PI / 180.0f;
+                        Vector2 barrelStart = {
+                            state->enemies[i].base.x, 
+                            state->enemies[i].base.y
+                        };
+                        Vector2 barrelEnd = {
+                            state->enemies[i].base.x + sin(radians) * state->enemies[i].base.radius * 1.5f,
+                            state->enemies[i].base.y - cos(radians) * state->enemies[i].base.radius * 1.5f
+                        };
+                        DrawLineV(barrelStart, barrelEnd, (Color){255, 0, 0, 100});
+                    }
+                } else {
+                    // Draw scout enemy as triangle with blue color
+                    Vector2 points[3];
+                    
+                    // Front point
+                    float radians = state->enemies[i].base.angle * PI / 180.0f;
+                    points[0].x = state->enemies[i].base.x + sin(radians) * state->enemies[i].base.radius * 1.5f;
+                    points[0].y = state->enemies[i].base.y - cos(radians) * state->enemies[i].base.radius * 1.5f;
+                    
+                    // Left wing
+                    float leftAngle = radians + PI * 0.8f;
+                    points[1].x = state->enemies[i].base.x + sin(leftAngle) * state->enemies[i].base.radius;
+                    points[1].y = state->enemies[i].base.y - cos(leftAngle) * state->enemies[i].base.radius;
+                    
+                    // Right wing
+                    float rightAngle = radians - PI * 0.8f;
+                    points[2].x = state->enemies[i].base.x + sin(rightAngle) * state->enemies[i].base.radius;
+                    points[2].y = state->enemies[i].base.y - cos(rightAngle) * state->enemies[i].base.radius;
+                    
+                    // Draw the hitbox lines
+                    Color hitboxColor = state->Debug ? (Color){0, 0, 255, 100} : SKYBLUE;
+                    DrawLineV(points[0], points[1], hitboxColor);
+                    DrawLineV(points[1], points[2], hitboxColor);
+                    DrawLineV(points[2], points[0], hitboxColor);
+                    
+                    // If in debug mode, add an indicator for scouts that want to group
+                    if (state->Debug && (i % 100 < SCOUT_GROUP_CHANCE)) {
+                        // Draw small dot on scouts that want to group
+                        DrawCircleV(
+                            (Vector2){state->enemies[i].base.x, state->enemies[i].base.y},
+                            3.0f,
+                            (Color){0, 255, 255, 200}
+                        );
+                    }
                 }
             }
             

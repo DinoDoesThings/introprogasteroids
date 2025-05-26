@@ -7,6 +7,6 @@
 void spawnEnemy(GameState* state, EnemyType type);
 void updateEnemies(GameState* state, float deltaTime);
 void fireEnemyWeapon(GameState* state, Enemy* enemy);
-void emitEnemyThrustParticles(GameState* state, Enemy* enemy, int count);
+float getEnemyTextureScale(EnemyType type);
 
 #endif // ENEMIES_H
