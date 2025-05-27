@@ -5,5 +5,6 @@
 #include "typedefs.h"
 
 bool checkCollision(GameObject* a, GameObject* b);
+void checkPowerupCollisions(GameState* state);
 
 #endif // COLLISIONS_H

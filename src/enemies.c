@@ -14,6 +14,7 @@
 #include "collisions.h"
 #include "initialize.h"
 #include "particles.h"
+#include "powerups.h"
 
 void spawnEnemy(GameState* state, EnemyType type) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
@@ -69,13 +70,19 @@ void fireEnemyWeapon(GameState* state, Enemy* enemy) {
             // Start the bullet at the enemy's position
             state->enemyBullets[i].base.x = enemy->base.x;
             state->enemyBullets[i].base.y = enemy->base.y;
-            state->enemyBullets[i].base.radius = (enemy->type == ENEMY_TANK) ? 4.0f : 2.0f;
+            state->enemyBullets[i].base.radius = (enemy->type == ENEMY_TANK) ? 6.0f : 2.0f; // Larger grenade
             
             // Set bullet properties based on enemy type
             if (enemy->type == ENEMY_TANK) {
                 state->enemyBullets[i].damage = TANK_ENEMY_BULLET_DAMAGE;
+                state->enemyBullets[i].type = BULLET_GRENADE;
+                state->enemyBullets[i].timer = TANK_GRENADE_TIMER;
+                state->enemyBullets[i].hasExploded = false;
             } else {
                 state->enemyBullets[i].damage = SCOUT_ENEMY_BULLET_DAMAGE;
+                state->enemyBullets[i].type = BULLET_NORMAL;
+                state->enemyBullets[i].timer = 0.0f;
+                state->enemyBullets[i].hasExploded = false;
             }
             
             // Calculate direction to player
@@ -93,8 +100,8 @@ void fireEnemyWeapon(GameState* state, Enemy* enemy) {
                 dy = -cos(angle);
             }
             
-            // Set bullet velocity
-            float bulletSpeed = ENEMY_BULLET_SPEED;
+            // Set bullet velocity (slower for grenades)
+            float bulletSpeed = (enemy->type == ENEMY_TANK) ? ENEMY_BULLET_SPEED * 0.7f : ENEMY_BULLET_SPEED;
             state->enemyBullets[i].base.dx = dx * bulletSpeed;
             state->enemyBullets[i].base.dy = dy * bulletSpeed;
             
@@ -106,6 +113,92 @@ void fireEnemyWeapon(GameState* state, Enemy* enemy) {
             break;
         }
     }
+}
+
+void explodeGrenade(GameState* state, int grenadeIndex) {
+    Bullet* grenade = &state->enemyBullets[grenadeIndex];
+    bool isPlayerGrenade = grenade->isPlayerBullet;
+    
+    // Create explosion particles
+    for (int i = 0; i < 15; i++) {
+        for (int j = 0; j < MAX_PARTICLES; j++) {
+            if (!state->particles[j].active) {
+                state->particles[j].active = true;
+                state->particles[j].life = PARTICLE_LIFETIME * 0.8f;
+                state->particles[j].position.x = grenade->base.x;
+                state->particles[j].position.y = grenade->base.y;
+                
+                // Add randomness to particle position
+                state->particles[j].position.x += GetRandomValue(-5, 5);
+                state->particles[j].position.y += GetRandomValue(-5, 5);
+                
+                // Set particle velocity outward from explosion center
+                float particleAngle = GetRandomValue(0, 359) * PI / 180.0f;
+                float particleSpeed = PARTICLE_SPEED * GetRandomValue(80, 150) / 100.0f;
+                state->particles[j].velocity.x = cos(particleAngle) * particleSpeed;
+                state->particles[j].velocity.y = sin(particleAngle) * particleSpeed;
+                
+                state->particles[j].radius = GetRandomValue(2, 5);
+                
+                // Orange explosion color for player grenades, red for enemy
+                if (isPlayerGrenade) {
+                    state->particles[j].color = (Color){ 255, 165, 0, 255 };  // Orange
+                } else {
+                    state->particles[j].color = (Color){ 255, 100, 0, 255 };  // Red-orange
+                }
+                
+                break;
+            }
+        }
+    }
+    
+    // Create explosion bullets in cardinal and intercardinal directions
+    float directions[8][2] = {
+        {0, -1},      // North
+        {0.707f, -0.707f},  // Northeast
+        {1, 0},       // East
+        {0.707f, 0.707f},   // Southeast
+        {0, 1},       // South
+        {-0.707f, 0.707f},  // Southwest
+        {-1, 0},      // West
+        {-0.707f, -0.707f}  // Northwest
+    };
+    
+    int explosionCount = isPlayerGrenade ? PLAYER_GRENADE_EXPLOSION_COUNT : TANK_GRENADE_EXPLOSION_COUNT;
+    float explosionSpeed = isPlayerGrenade ? PLAYER_GRENADE_EXPLOSION_SPEED : TANK_GRENADE_EXPLOSION_SPEED;
+    int explosionDamage = isPlayerGrenade ? PLAYER_GRENADE_EXPLOSION_DAMAGE : TANK_GRENADE_EXPLOSION_DAMAGE;
+    
+    for (int dir = 0; dir < explosionCount; dir++) {
+        // Find an available bullet slot
+        for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
+            if (!state->enemyBullets[i].base.active) {
+                state->enemyBullets[i].base.active = true;
+                state->enemyBullets[i].base.x = grenade->base.x;
+                state->enemyBullets[i].base.y = grenade->base.y;
+                state->enemyBullets[i].base.radius = 3.0f;
+                state->enemyBullets[i].damage = explosionDamage;
+                state->enemyBullets[i].type = BULLET_NORMAL;
+                state->enemyBullets[i].timer = 0.0f;
+                state->enemyBullets[i].hasExploded = false;
+                state->enemyBullets[i].isPlayerBullet = isPlayerGrenade; // Maintain player ownership
+                
+                // Set velocity in the specified direction
+                state->enemyBullets[i].base.dx = directions[dir][0] * explosionSpeed;
+                state->enemyBullets[i].base.dy = directions[dir][1] * explosionSpeed;
+                
+                break;
+            }
+        }
+    }
+    
+    // Play explosion sound
+    if (state->soundLoaded) {
+        PlaySound(state->sounds[SOUND_ENEMY_EXPLODE]);
+    }
+    
+    // Mark grenade as exploded and deactivate it
+    grenade->hasExploded = true;
+    grenade->base.active = false;
 }
 
 void updateEnemies(GameState* state, float deltaTime) {
@@ -709,6 +802,19 @@ void updateEnemies(GameState* state, float deltaTime) {
                         // Add score based on enemy type
                         state->score += (enemy->type == ENEMY_TANK) ? TANK_ENEMY_SCORE : SCOUT_ENEMY_SCORE;
                         
+                        // Check for powerup drops
+                        if (enemy->type == ENEMY_SCOUT) {
+                            // 10% chance to drop shotgun powerup
+                            if (GetRandomValue(1, 100) <= SHOTGUN_DROP_CHANCE) {
+                                spawnShotgunPowerup(state, enemy->base.x, enemy->base.y);
+                            }
+                        } else if (enemy->type == ENEMY_TANK) {
+                            // 10% chance to drop grenade powerup
+                            if (GetRandomValue(1, 100) <= GRENADE_DROP_CHANCE) {
+                                spawnGrenadePowerup(state, enemy->base.x, enemy->base.y);
+                            }
+                        }
+                        
                         // Play explosion sound
                         if (state->soundLoaded) {
                             PlaySound(state->sounds[SOUND_ENEMY_EXPLODE]);
@@ -751,6 +857,15 @@ void updateEnemies(GameState* state, float deltaTime) {
     // Update enemy bullets
     for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
         if (state->enemyBullets[i].base.active) {
+            // Update grenade timer
+            if (state->enemyBullets[i].type == BULLET_GRENADE && !state->enemyBullets[i].hasExploded) {
+                state->enemyBullets[i].timer -= deltaTime;
+                if (state->enemyBullets[i].timer <= 0) {
+                    explodeGrenade(state, i);
+                    continue; // Skip normal bullet update since grenade exploded
+                }
+            }
+            
             state->enemyBullets[i].base.x += state->enemyBullets[i].base.dx;
             state->enemyBullets[i].base.y += state->enemyBullets[i].base.dy;
             
@@ -764,7 +879,12 @@ void updateEnemies(GameState* state, float deltaTime) {
             // Check for bullet collision with asteroids
             for (int j = 0; j < MAX_ASTEROIDS; j++) {
                 if (state->asteroids[j].base.active && checkCollision(&state->enemyBullets[i].base, &state->asteroids[j].base)) {
-                    state->enemyBullets[i].base.active = false;
+                    // If it's a grenade, explode it on impact
+                    if (state->enemyBullets[i].type == BULLET_GRENADE && !state->enemyBullets[i].hasExploded) {
+                        explodeGrenade(state, i);
+                    } else {
+                        state->enemyBullets[i].base.active = false;
+                    }
                     splitAsteroid(state, j);
                     
                     // Play asteroid hit sound
@@ -778,7 +898,13 @@ void updateEnemies(GameState* state, float deltaTime) {
 
             // Check for collision with player
             if (checkCollision(&state->ship.base, &state->enemyBullets[i].base)) {
-                state->enemyBullets[i].base.active = false;
+                // If it's a grenade, explode it on impact with player
+                if (state->enemyBullets[i].type == BULLET_GRENADE && !state->enemyBullets[i].hasExploded) {
+                    explodeGrenade(state, i);
+                } else {
+                    state->enemyBullets[i].base.active = false;
+                }
+                
                 state->health -= state->enemyBullets[i].damage;
                 
                 // Play hit sound

@@ -16,24 +16,36 @@
 #include "initialize.h"
 
 void handleInput(GameState* state) {
-    // Check for pause
-    if (IsKeyPressed(KEY_P)) {
-        state->screenState = PAUSE_STATE;
-        return; // Skip other input handling when pausing
-    }
-    
-    // Get mouse position in world space
+    // Get mouse position in world space for ship aiming
     Vector2 mousePosition = GetScreenToWorld2D(GetMousePosition(), state->camera);
     
-    // Calculate angle between ship and mouse cursor
+    // Calculate direction from ship to mouse cursor
     float dx = mousePosition.x - state->ship.base.x;
     float dy = mousePosition.y - state->ship.base.y;
+    
+    // Update ship angle to point toward cursor
     state->ship.base.angle = atan2(dx, -dy) * 180.0f / PI;
     
-    // Handle mouse click for firing - changed to support holding the button
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && state->fireTimer <= 0) {
-        fireWeapon(state);
-        state->fireTimer = FIRE_RATE; // Set the cooldown timer
+    // Handle mouse click for firing with weapon-specific timing
+    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        // Check weapon-specific fire rate
+        if (state->currentWeapon == WEAPON_SHOTGUN) {
+            // Shotgun has its own cooldown timer
+            if (state->shotgunFireTimer <= 0) {
+                fireWeapon(state);
+            }
+        } else if (state->currentWeapon == WEAPON_GRENADE) {
+            // Grenade has its own cooldown timer
+            if (state->grenadeFireTimer <= 0) {
+                fireWeapon(state);
+            }
+        } else {
+            // Normal weapon uses the general fire timer
+            if (state->fireTimer <= 0) {
+                fireWeapon(state);
+                state->fireTimer = FIRE_RATE; // Set the cooldown timer for normal weapon
+            }
+        }
     }
     
     // Debug mode keybindings - only active when debug mode is on
@@ -125,8 +137,8 @@ void handleInput(GameState* state) {
     }
 
     if (IsKeyDown(KEY_R)) {
-        // Reload ammo
-        if (!state->isReloading && state->currentAmmo < MAX_AMMO) {
+        // Reload ammo (only for normal weapon)
+        if (!state->isReloading && state->normalAmmo < MAX_AMMO && state->currentWeapon == WEAPON_NORMAL) {
             state->isReloading = true;
             state->reloadTimer = RELOAD_TIME;
             
@@ -155,9 +167,9 @@ void handleMenuInput(GameState* state) {
     // Check if mouse is over the Quit button
     bool isMouseOverQuitButton = CheckCollisionPointRec(mousePoint, state->quitButton);
     
-    // Change to game state if play button is clicked
+    // Change to info state if play button is clicked (instead of directly to game)
     if (isMouseOverPlayButton && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        state->screenState = GAME_STATE;
+        state->screenState = INFO_STATE;
     }
     
     // Change to options state if options button is clicked
@@ -254,6 +266,18 @@ void handleGameOverInput(GameState* state) {
     if (isMouseOverMainMenuButton && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
         // Reset game data but preserve sound settings
         resetGameData(state);
+        state->screenState = MENU_STATE;
+    }
+}
+
+void handleInfoInput(GameState* state) {
+    // Press Z to close info screen and start the game
+    if (IsKeyPressed(KEY_Z)) {
+        state->screenState = GAME_STATE;
+    }
+    
+    // Also allow ESC to go back to menu
+    if (IsKeyPressed(KEY_ESCAPE)) {
         state->screenState = MENU_STATE;
     }
 }

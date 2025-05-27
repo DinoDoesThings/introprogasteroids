@@ -20,6 +20,7 @@ void loadSounds(GameState* state) {
     state->sounds[SOUND_SHIP_HIT] = LoadSound("resources/sounds/ship_hit.ogg");
     state->sounds[SOUND_ENEMY_SHOOT] = LoadSound("resources/sounds/enemy_shoot.ogg");
     state->sounds[SOUND_ENEMY_EXPLODE] = LoadSound("resources/sounds/enemy_explode.ogg");
+    state->sounds[SOUND_POWERUP_PICKUP] = LoadSound("resources/sounds/powerup_pickup.ogg");
     
     // Set initial volume for all sounds
     for (int i = 0; i < MAX_SOUNDS; i++) {

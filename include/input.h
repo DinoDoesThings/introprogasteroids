@@ -4,10 +4,11 @@
 // Custom headers
 #include "typedefs.h"
 
-void handleInput(GameState* state);
 void handleMenuInput(GameState* state);
 void handlePauseInput(GameState* state);
 void handleOptionsInput(GameState* state);
 void handleGameOverInput(GameState* state);
+void handleInfoInput(GameState* state);
+void handleInput(GameState* state);
 
 #endif // INPUT_H

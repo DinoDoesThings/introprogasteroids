@@ -38,7 +38,8 @@ typedef enum {
     GAME_STATE,
     PAUSE_STATE,
     OPTIONS_STATE,
-    GAME_OVER_STATE
+    GAME_OVER_STATE,
+    INFO_STATE
 } GameScreenState;
 
 typedef enum {
@@ -59,17 +60,55 @@ typedef struct {
     Texture2D texture;
 } Enemy;
 
+typedef enum {
+    BULLET_NORMAL,
+    BULLET_GRENADE
+} BulletType;
+
 typedef struct {
     GameObject base;
     int damage;
     bool isPlayerBullet; // To distinguish player bullets from enemy bullets
+    BulletType type;     // New field for bullet type
+    float timer;         // Timer for grenade explosion
+    bool hasExploded;    // Flag to prevent multiple explosions
 } Bullet;
+
+typedef enum {
+    POWERUP_HEALTH,
+    POWERUP_SHOTGUN,
+    POWERUP_GRENADE
+} PowerupType;
+
+typedef enum {
+    WEAPON_NORMAL,
+    WEAPON_SHOTGUN,
+    WEAPON_GRENADE
+} WeaponType;
+
+typedef struct {
+    GameObject base;
+    PowerupType type;
+    float lifetime;
+    float pulseTimer;
+    Texture2D texture;
+} Powerup;
 
 typedef struct {
     Ship ship;
     GameObject bullets[MAX_BULLETS];
     Asteroid asteroids[MAX_ASTEROIDS];
+    Enemy enemies[MAX_ENEMIES];
+    Bullet enemyBullets[MAX_ENEMY_BULLETS];
     Particle particles[MAX_PARTICLES];
+    Powerup powerups[MAX_POWERUPS];
+    WeaponType currentWeapon;
+    int normalAmmo;
+    int shotgunAmmo;
+    int grenadeAmmo;           // New field for grenade ammo
+    float fireTimer;           // General fire timer
+    float shotgunFireTimer;    // Specific timer for shotgun cooldown
+    float grenadeFireTimer;    // New field for grenade cooldown
     int score;
     int lives;
     int health;
@@ -77,7 +116,6 @@ typedef struct {
     int currentAmmo;
     float reloadTimer;
     bool isReloading;
-    float fireTimer;
     bool running;
     bool Debug;
     GameScreenState screenState;
@@ -92,8 +130,6 @@ typedef struct {
     bool windowFocused;
     Sound sounds[MAX_SOUNDS];
     bool soundLoaded;
-    Enemy enemies[MAX_ENEMIES];
-    Bullet enemyBullets[MAX_ENEMY_BULLETS];
     float enemySpawnTimer;
     int currentWave;
     int asteroidsRemaining;

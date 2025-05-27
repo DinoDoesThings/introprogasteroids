@@ -4,15 +4,15 @@
 // =============================================================================
 // GAME VERSION
 // =============================================================================
-#define VERSION_NUMBER "v1.3.0"
+#define VERSION_NUMBER "v2.0.0"
 
 // =============================================================================
 // WINDOW & MAP SETTINGS
 // =============================================================================
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
-#define MAP_WIDTH 2000
-#define MAP_HEIGHT 1500
+#define MAP_WIDTH 2500
+#define MAP_HEIGHT 1000
 #define BOUNDARY_COLOR (Color){ 30, 30, 80, 255 }  // Dark blue boundary
 
 // =============================================================================
@@ -31,9 +31,25 @@
 // =============================================================================
 #define MAX_BULLETS 30
 #define BULLET_SPEED 10.0f
+
+// =============================================================================
+// WEAPON SETTINGS
+// =============================================================================
 #define MAX_AMMO 30
+#define SHOTGUN_MAX_AMMO 10
+#define SHOTGUN_PELLETS 5              // Number of bullets per shotgun shot
+#define SHOTGUN_SPREAD_ANGLE 30.0f     // Spread angle in degrees
+#define SHOTGUN_FIRE_RATE 1.0f         // 1 second cooldown between shotgun shots
+#define GRENADE_MAX_AMMO 5             // Number of grenades player can fire
+#define GRENADE_FIRE_RATE 1.5f         // 1.5 second cooldown between grenade shots
 #define RELOAD_TIME 5.0f
-#define FIRE_RATE 0.2f  // Time between shots in seconds
+#define FIRE_RATE 0.35f  // Time between shots in seconds for normal weapon
+
+// Player Grenade Settings
+#define PLAYER_GRENADE_TIMER 2.5f      // Time before player grenade explodes
+#define PLAYER_GRENADE_EXPLOSION_DAMAGE 35 // Damage of player grenade explosion bullets
+#define PLAYER_GRENADE_EXPLOSION_SPEED 5.0f // Speed of explosion bullets
+#define PLAYER_GRENADE_EXPLOSION_COUNT 8    // Number of bullets (8 directions)
 
 // =============================================================================
 // ASTEROIDS
@@ -41,7 +57,7 @@
 #define MAX_ASTEROIDS 50
 #define BASE_ASTEROID_COUNT 10
 #define ASTEROID_INCREMENT 3
-#define LARGE_ASTEROID_DAMAGE 30
+#define LARGE_ASTEROID_DAMAGE 40
 #define MEDIUM_ASTEROID_DAMAGE 20
 #define SMALL_ASTEROID_DAMAGE 10
 
@@ -56,10 +72,10 @@
 // ENEMY SETTINGS
 // =============================================================================
 #define MAX_ENEMIES 20
-#define MAX_ENEMY_BULLETS 50
+#define MAX_ENEMY_BULLETS 100
 #define ENEMY_BULLET_SPEED 6.0f
 #define ENEMY_DETECTION_RADIUS 500.0f
-#define ENEMY_SPAWN_TIME 15.0f
+#define ENEMY_SPAWN_TIME 10.0f
 
 // Tank Enemy
 #define TANK_ENEMY_RADIUS 40.0f
@@ -69,6 +85,12 @@
 #define TANK_ENEMY_FIRE_RATE 2.0f
 #define TANK_ENEMY_ATTACK_DISTANCE 400.0f
 #define TANK_ENEMY_SCORE 500
+
+// Tank Grenade Settings
+#define TANK_GRENADE_TIMER 2.0f          // Time before explosion (seconds)
+#define TANK_GRENADE_EXPLOSION_DAMAGE 25 // Damage of explosion bullets
+#define TANK_GRENADE_EXPLOSION_SPEED 4.0f // Speed of explosion bullets
+#define TANK_GRENADE_EXPLOSION_COUNT 8    // Number of bullets (8 directions: cardinal + intercardinal)
 
 // Scout Enemy
 #define SCOUT_ENEMY_RADIUS 20.0f
@@ -99,7 +121,7 @@
 // =============================================================================
 // AUDIO SETTINGS
 // =============================================================================
-#define MAX_SOUNDS 7  // Maximum number of sounds we'll load
+#define MAX_SOUNDS 8  // Maximum number of sounds we'll load
 #define SOUND_SHOOT 0
 #define SOUND_RELOAD_START 1
 #define SOUND_RELOAD_FINISH 2
@@ -107,6 +129,7 @@
 #define SOUND_SHIP_HIT 4
 #define SOUND_ENEMY_SHOOT 5
 #define SOUND_ENEMY_EXPLODE 6
+#define SOUND_POWERUP_PICKUP 7
 
 // =============================================================================
 // TEXTURE SETTINGS
@@ -124,6 +147,12 @@
 
 // Misc
 #define CROSSHAIR_TEXTURE_PATH "resources/misc/crosshair.png"
+
+// Powerup Textures
+#define HEALTH_POWERUP_TEXTURE_PATH "resources/powerups/health.png"
+#define SHOTGUN_POWERUP_TEXTURE_PATH "resources/powerups/shotgun.png"
+#define GRENADE_POWERUP_TEXTURE_PATH "resources/powerups/grenade.png"
+#define POWERUP_TEXTURE_SCALE 0.8f
 
 // =============================================================================
 // UI SETTINGS
@@ -152,5 +181,16 @@
 #define SCOUT_PARTICLE_RANDOM_RANGE 2.0f
 #define SCOUT_PARTICLE_REAR_OFFSET 0.9f
 #define SCOUT_PARTICLE_SPEED_MULTIPLIER 0.8f
+
+// =============================================================================
+// POWERUP SETTINGS
+// =============================================================================
+#define MAX_POWERUPS 20
+#define HEALTH_POWERUP_HEAL_AMOUNT 20
+#define HEALTH_POWERUP_DROP_CHANCE 20  // 20% chance
+#define SHOTGUN_DROP_CHANCE 100         // 10% chance for shotgun drop from scouts
+#define GRENADE_DROP_CHANCE 100         // 10% chance for grenade drop from tanks
+#define POWERUP_LIFETIME 15.0f  // Powerups last 15 seconds
+#define POWERUP_PULSE_SPEED 3.0f  // Speed of pulsing animation
 
 #endif // CONFIG_H

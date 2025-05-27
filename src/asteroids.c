@@ -9,6 +9,7 @@
 // Include custom headers
 #include "typedefs.h"
 #include "config.h"
+#include "powerups.h"
 
 void createAsteroids(GameState* state, int count) {
     int created = 0;
@@ -52,6 +53,9 @@ void splitAsteroid(GameState* state, int index) {
     float y = state->asteroids[index].base.y;
     int size = state->asteroids[index].size;
     
+    // Try to spawn a health powerup before deactivating the asteroid
+    spawnHealthPowerup(state, x, y);
+    
     // Deactivate the hit asteroid
     state->asteroids[index].base.active = false;
     
@@ -78,11 +82,12 @@ void splitAsteroid(GameState* state, int index) {
                 created++;
             }
         }
-    }
-    
-    // Decrement asteroids remaining when an asteroid is destroyed
-    // but only if it's split into smaller ones or completely destroyed
-    if (state->asteroids[index].size <= 1) {
+        
+        // BUG FIX: When splitting, we remove 1 asteroid but add 2, so net increase is +1
+        // We should increment the count, not decrement it
+        state->asteroidsRemaining++;
+    } else {
+        // Only decrement when the smallest asteroid is destroyed (no split)
         state->asteroidsRemaining--;
     }
 }

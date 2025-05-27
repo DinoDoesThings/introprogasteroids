@@ -75,6 +75,7 @@
     "time.h": "c",
     "string.h": "c",
     "collisions.h": "c",
-    "audio.h": "c"
+    "audio.h": "c",
+    "powerups.h": "c"
   }
 }

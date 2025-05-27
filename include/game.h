@@ -5,5 +5,6 @@
 #include "typedefs.h"
 
 void updateGame(GameState* state, float deltaTime);
+void preloadTextures(GameState* state);
 
 #endif // GAME_H

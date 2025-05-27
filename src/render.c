@@ -11,6 +11,76 @@
 #include "typedefs.h"
 #include "config.h"
 #include "enemies.h"
+#include "powerups.h"
+
+void renderPowerups(const GameState* state) {
+    for (int i = 0; i < MAX_POWERUPS; i++) {
+        if (state->powerups[i].base.active) {
+            const Powerup* powerup = &state->powerups[i];
+            
+            // Calculate pulsing effect
+            float pulseAlpha = 0.7f + 0.3f * sinf(powerup->pulseTimer);
+            
+            // Flash faster when about to expire
+            if (powerup->lifetime < 3.0f) {
+                pulseAlpha = 0.5f + 0.5f * sinf(powerup->pulseTimer * 3.0f);
+            }
+            
+            if (powerup->texture.id > 0) {
+                // Draw texture
+                Vector2 origin = { powerup->texture.width / 2.0f, powerup->texture.height / 2.0f };
+                Rectangle source = { 0, 0, powerup->texture.width, powerup->texture.height };
+                Rectangle dest = { 
+                    powerup->base.x, 
+                    powerup->base.y, 
+                    powerup->texture.width * POWERUP_TEXTURE_SCALE, 
+                    powerup->texture.height * POWERUP_TEXTURE_SCALE 
+                };
+                
+                Color tintColor = WHITE;
+                tintColor.a = (unsigned char)(255 * pulseAlpha);
+                
+                DrawTexturePro(powerup->texture, source, dest, origin, powerup->base.angle, tintColor);
+            } else {
+                // Fallback: draw as colored circle
+                Color powerupColor;
+                switch (powerup->type) {
+                    case POWERUP_HEALTH:
+                        powerupColor = (Color){255, 100, 100, (unsigned char)(255 * pulseAlpha)};
+                        break;
+                    case POWERUP_SHOTGUN:
+                        powerupColor = (Color){100, 255, 100, (unsigned char)(255 * pulseAlpha)};
+                        break;
+                    case POWERUP_GRENADE:
+                        powerupColor = (Color){255, 165, 0, (unsigned char)(255 * pulseAlpha)};
+                        break;
+                    default:
+                        powerupColor = (Color){255, 255, 255, (unsigned char)(255 * pulseAlpha)};
+                        break;
+                }
+                
+                DrawCircleV((Vector2){powerup->base.x, powerup->base.y}, powerup->base.radius, powerupColor);
+                
+                // Draw appropriate symbol
+                if (powerup->type == POWERUP_HEALTH) {
+                    // Draw a cross for health powerup
+                    Color crossColor = {255, 255, 255, (unsigned char)(255 * pulseAlpha)};
+                    float crossSize = powerup->base.radius * 0.6f;
+                    DrawRectangle(powerup->base.x - 2, powerup->base.y - crossSize, 4, crossSize * 2, crossColor);
+                    DrawRectangle(powerup->base.x - crossSize, powerup->base.y - 2, crossSize * 2, 4, crossColor);
+                } else if (powerup->type == POWERUP_SHOTGUN) {
+                    // Draw "S" for shotgun powerup
+                    Color textColor = {255, 255, 255, (unsigned char)(255 * pulseAlpha)};
+                    DrawText("S", powerup->base.x - 6, powerup->base.y - 8, 16, textColor);
+                } else if (powerup->type == POWERUP_GRENADE) {
+                    // Draw "G" for grenade powerup
+                    Color textColor = {255, 255, 255, (unsigned char)(255 * pulseAlpha)};
+                    DrawText("G", powerup->base.x - 6, powerup->base.y - 8, 16, textColor);
+                }
+            }
+        }
+    }
+}
 
 void renderGameObject(const GameObject* obj, int sides, const GameState* state) {
     if (sides <= 0 || !obj->active) return;
@@ -260,9 +330,40 @@ void renderEnemies(const GameState* state) {
     // Draw enemy bullets
     for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
         if (state->enemyBullets[i].base.active) {
-            Color bulletColor = (state->enemyBullets[i].damage >= TANK_ENEMY_BULLET_DAMAGE) ? RED : BLUE;
-            DrawCircleV((Vector2){state->enemyBullets[i].base.x, state->enemyBullets[i].base.y}, 
-                       state->enemyBullets[i].base.radius, bulletColor);
+            Color bulletColor;
+            
+            if (state->enemyBullets[i].type == BULLET_GRENADE) {
+                // Grenade bullets are larger and orange/red
+                float pulseIntensity = 0.8f + 0.2f * sinf(GetTime() * 8.0f); // Pulsing effect
+                bulletColor = (Color){
+                    (unsigned char)(255 * pulseIntensity), 
+                    (unsigned char)(100 * pulseIntensity), 
+                    0, 
+                    255
+                };
+                
+                // Draw grenade with a slightly larger radius
+                DrawCircleV((Vector2){state->enemyBullets[i].base.x, state->enemyBullets[i].base.y}, 
+                           state->enemyBullets[i].base.radius, bulletColor);
+
+                DrawLineEx(
+                    (Vector2){state->enemyBullets[i].base.x, state->enemyBullets[i].base.y - 3},
+                    (Vector2){state->enemyBullets[i].base.x, state->enemyBullets[i].base.y + 3},
+                    2.0f, WHITE
+                );
+            } else {
+                // Check if this is an explosion bullet (smaller damage from grenade explosion)
+                if (state->enemyBullets[i].damage == TANK_GRENADE_EXPLOSION_DAMAGE) {
+                    // Explosion bullets are red
+                    bulletColor = RED;
+                } else {
+                    // Normal bullets - color based on damage
+                    bulletColor = (state->enemyBullets[i].damage >= TANK_ENEMY_BULLET_DAMAGE) ? RED : BLUE;
+                }
+                
+                DrawCircleV((Vector2){state->enemyBullets[i].base.x, state->enemyBullets[i].base.y}, 
+                           state->enemyBullets[i].base.radius, bulletColor);
+            }
         }
     }
 }
@@ -317,6 +418,9 @@ void renderGame(const GameState* state) {
     // Draw enemies
     renderEnemies(state);
     
+    // Draw powerups
+    renderPowerups(state);
+    
     // Draw aiming guide only in debug mode
     if (state->Debug) {
         Vector2 mousePosition = GetScreenToWorld2D(GetMousePosition(), state->camera);
@@ -367,7 +471,25 @@ void renderGame(const GameState* state) {
     // Draw ammo counter
     int ammoY = 70; // Position below lives
     
-    if (state->isReloading) {
+    // Get current weapon ammo info
+    int currentAmmo, maxAmmo;
+    const char* weaponName;
+    
+    if (state->currentWeapon == WEAPON_SHOTGUN) {
+        currentAmmo = state->shotgunAmmo;
+        maxAmmo = SHOTGUN_MAX_AMMO;
+        weaponName = "SHOTGUN";
+    } else if (state->currentWeapon == WEAPON_GRENADE) {
+        currentAmmo = state->grenadeAmmo;
+        maxAmmo = GRENADE_MAX_AMMO;
+        weaponName = "GRENADE";
+    } else {
+        currentAmmo = state->normalAmmo;
+        maxAmmo = MAX_AMMO;
+        weaponName = "RIFLE";
+    }
+    
+    if (state->isReloading && state->currentWeapon == WEAPON_NORMAL) {
         // Draw reload timer text
         DrawText(TextFormat("RELOADING: %.1f", state->reloadTimer), 10, ammoY, 20, RED);
         
@@ -390,9 +512,9 @@ void renderGame(const GameState* state) {
         // Draw border around reload bar
         DrawRectangleLines(reloadBarX, reloadBarY, reloadBarWidth, reloadBarHeight, WHITE);
     } else {
-        // Draw ammo count
-        Color ammoColor = state->currentAmmo > 5 ? WHITE : RED;
-        DrawText(TextFormat("AMMO: %d/%d", state->currentAmmo, MAX_AMMO), 10, ammoY, 20, ammoColor);
+        // Draw ammo count with weapon type
+        Color ammoColor = currentAmmo > (maxAmmo / 4) ? WHITE : RED;
+        DrawText(TextFormat("%s: %d/%d", weaponName, currentAmmo, maxAmmo), 10, ammoY, 20, ammoColor);
         
         // Draw ammo indicators as small rectangles - positioned below the text
         int ammoRectSize = 5;
@@ -401,8 +523,20 @@ void renderGame(const GameState* state) {
         int ammoIndicatorY = ammoY + 30; // Position below text with some spacing
         
         // Draw ammo indicators
-        for (int i = 0; i < MAX_AMMO; i++) {
-            Color rectColor = i < state->currentAmmo ? YELLOW : DARKGRAY;
+        for (int i = 0; i < maxAmmo; i++) {
+            Color rectColor;
+            if (i < currentAmmo) {
+                if (state->currentWeapon == WEAPON_SHOTGUN) {
+                    rectColor = GREEN;
+                } else if (state->currentWeapon == WEAPON_GRENADE) {
+                    rectColor = ORANGE;
+                } else {
+                    rectColor = YELLOW;
+                }
+            } else {
+                rectColor = DARKGRAY;
+            }
+            
             DrawRectangle(
                 ammoStartX + (i * (ammoRectSize + ammoRectSpacing)), 
                 ammoIndicatorY, 
@@ -412,12 +546,32 @@ void renderGame(const GameState* state) {
             );
         }
     }
+    
+    // Draw weapon indicator
+    int weaponIndicatorY = ammoY + 50;
+    const char* weaponText;
+    Color weaponColor;
+    
+    if (state->currentWeapon == WEAPON_SHOTGUN) {
+        weaponText = "WEAPON: SHOTGUN";
+        weaponColor = GREEN;
+    } else if (state->currentWeapon == WEAPON_GRENADE) {
+        weaponText = "WEAPON: GRENADE";
+        weaponColor = ORANGE;
+    } else {
+        weaponText = "WEAPON: RIFLE";
+        weaponColor = WHITE;
+    }
+    
+    DrawText(weaponText, 10, weaponIndicatorY, 18, weaponColor);
 
     if (state->Debug) {
-        // Draw debug information
-        DrawText(TextFormat("FPS: %d", GetFPS()), 10, 120, 20, WHITE);
-        DrawText(TextFormat("Ship Position: (%.1f, %.1f)", state->ship.base.x, state->ship.base.y), 10, 150, 20, WHITE);
-        DrawText(TextFormat("Ship Velocity: (%.1f, %.1f)", state->ship.base.dx, state->ship.base.dy), 10, 180, 20, WHITE);
+        // Draw debug information at bottom left
+        int debugStartY = WINDOW_HEIGHT - 210; // Start 200 pixels from bottom
+        
+        DrawText(TextFormat("FPS: %d", GetFPS()), 10, debugStartY, 20, WHITE);
+        DrawText(TextFormat("Ship Position: (%.1f, %.1f)", state->ship.base.x, state->ship.base.y), 10, debugStartY + 30, 20, WHITE);
+        DrawText(TextFormat("Ship Velocity: (%.1f, %.1f)", state->ship.base.dx, state->ship.base.dy), 10, debugStartY + 60, 20, WHITE);
 
         // Count active asteroids and enemies
         int activeAsteroids = 0;
@@ -434,10 +588,10 @@ void renderGame(const GameState* state) {
             }
         }
         
-        DrawText(TextFormat("Active Asteroids: %d", activeAsteroids), 10, 210, 20, WHITE);
-        DrawText(TextFormat("Active Enemies: %d", activeEnemies), 10, 240, 20, WHITE);
-        DrawText("F4: Kill all asteroids", 10, 270, 20, YELLOW);
-        DrawText("F5: Kill all enemies", 10, 300, 20, YELLOW);
+        DrawText(TextFormat("Active Asteroids: %d", activeAsteroids), 10, debugStartY + 90, 20, WHITE);
+        DrawText(TextFormat("Active Enemies: %d", activeEnemies), 10, debugStartY + 120, 20, WHITE);
+        DrawText("F4: Kill all asteroids", 10, debugStartY + 150, 20, YELLOW);
+        DrawText("F5: Kill all enemies", 10, debugStartY + 180, 20, YELLOW);
     }
     
     // Draw wave counter in bottom right
@@ -809,6 +963,189 @@ void renderGameOver(const GameState* state) {
     );
     
     // Draw version number in the bottom right corner
+    DrawText(VERSION_NUMBER, 
+             WINDOW_WIDTH - MeasureText(VERSION_NUMBER, 16) - 10,
+             WINDOW_HEIGHT - 25,
+             16, GRAY);
+    
+    EndDrawing();
+}
+
+void renderInfo(const GameState* state) {
+    BeginDrawing();
+    
+    // Clear screen with a very dark background for space
+    ClearBackground((Color){5, 5, 15, 255});
+    
+    // Draw title (same style as other menus)
+    const char* title = "GAME INFORMATION";
+    int titleWidth = MeasureText(title, TITLE_FONT_SIZE);
+    DrawText(title, WINDOW_WIDTH/2 - titleWidth/2, WINDOW_HEIGHT/4, TITLE_FONT_SIZE, WHITE);
+    
+    // Center the two columns on screen with more spacing
+    int totalContentWidth = 800; // Increased width for more spacing
+    int startX = (WINDOW_WIDTH - totalContentWidth) / 2;
+    int leftColumnX = startX;
+    int rightColumnX = startX + totalContentWidth / 2 + 80; // Increased spacing from 20 to 80
+    
+    // Left Column - Controls and Weapons
+    int currentY = WINDOW_HEIGHT/4 + 100;
+    
+    // Controls section
+    DrawText("CONTROLS:", leftColumnX, currentY, 30, (Color){255, 200, 100, 255});
+    currentY += 45;
+    
+    DrawText("WASD - Move ship", leftColumnX, currentY, 22, WHITE);
+    currentY += 28;
+    DrawText("Mouse - Aim and shoot", leftColumnX, currentY, 22, WHITE);
+    currentY += 28;
+    DrawText("R - Reload", leftColumnX, currentY, 22, WHITE);
+    currentY += 28;
+    DrawText("P - Pause", leftColumnX, currentY, 22, WHITE);
+    currentY += 50;
+    
+    // Weapons section
+    DrawText("WEAPONS & POWERUPS:", leftColumnX, currentY, 30, (Color){255, 150, 100, 255});
+    currentY += 45;
+    
+    // Health powerup
+    bool drewHealthTexture = false;
+    for (int i = 0; i < MAX_POWERUPS; i++) {
+        if (state->powerups[i].type == POWERUP_HEALTH && state->powerups[i].texture.id > 0) {
+            float scale = 32.0f / state->powerups[i].texture.width;
+            Rectangle source = { 0, 0, state->powerups[i].texture.width, state->powerups[i].texture.height };
+            Rectangle dest = { leftColumnX + 5, currentY + 2, 
+                             state->powerups[i].texture.width * scale, 
+                             state->powerups[i].texture.height * scale };
+            Vector2 origin = { 0, 0 };
+            DrawTexturePro(state->powerups[i].texture, source, dest, origin, 0.0f, WHITE);
+            drewHealthTexture = true;
+            break;
+        }
+    }
+    if (!drewHealthTexture) {
+        DrawCircleV((Vector2){leftColumnX + 20, currentY + 16}, 14, (Color){255, 100, 100, 255});
+        DrawText("+", leftColumnX + 16, currentY + 8, 16, WHITE);
+    }
+    DrawText("Health - Restores 50 health", leftColumnX + 45, currentY + 8, 18, WHITE);
+    currentY += 35;
+    
+    // Shotgun powerup
+    bool drewShotgunTexture = false;
+    for (int i = 0; i < MAX_POWERUPS; i++) {
+        if (state->powerups[i].type == POWERUP_SHOTGUN && state->powerups[i].texture.id > 0) {
+            float scale = 32.0f / state->powerups[i].texture.width;
+            Rectangle source = { 0, 0, state->powerups[i].texture.width, state->powerups[i].texture.height };
+            Rectangle dest = { leftColumnX + 5, currentY + 2, 
+                             state->powerups[i].texture.width * scale, 
+                             state->powerups[i].texture.height * scale };
+            Vector2 origin = { 0, 0 };
+            DrawTexturePro(state->powerups[i].texture, source, dest, origin, 0.0f, WHITE);
+            drewShotgunTexture = true;
+            break;
+        }
+    }
+    if (!drewShotgunTexture) {
+        DrawCircleV((Vector2){leftColumnX + 20, currentY + 16}, 14, (Color){100, 255, 100, 255});
+        DrawText("S", leftColumnX + 16, currentY + 8, 16, WHITE);
+    }
+    DrawText("Shotgun - 10 shots", leftColumnX + 45, currentY + 8, 18, WHITE);
+    currentY += 35;
+    
+    // Grenade powerup
+    bool drewGrenadeTexture = false;
+    for (int i = 0; i < MAX_POWERUPS; i++) {
+        if (state->powerups[i].type == POWERUP_GRENADE && state->powerups[i].texture.id > 0) {
+            float scale = 32.0f / state->powerups[i].texture.width;
+            Rectangle source = { 0, 0, state->powerups[i].texture.width, state->powerups[i].texture.height };
+            Rectangle dest = { leftColumnX + 5, currentY + 2, 
+                             state->powerups[i].texture.width * scale, 
+                             state->powerups[i].texture.height * scale };
+            Vector2 origin = { 0, 0 };
+            DrawTexturePro(state->powerups[i].texture, source, dest, origin, 0.0f, WHITE);
+            drewGrenadeTexture = true;
+            break;
+        }
+    }
+    if (!drewGrenadeTexture) {
+        DrawCircleV((Vector2){leftColumnX + 20, currentY + 16}, 14, (Color){255, 165, 0, 255});
+        DrawText("G", leftColumnX + 16, currentY + 8, 16, WHITE);
+    }
+    DrawText("Grenade - 5 explosive shots", leftColumnX + 45, currentY + 8, 18, WHITE);
+    
+    // Right Column - Enemies and Objectives
+    currentY = WINDOW_HEIGHT/4 + 100;
+    
+    // Enemies section
+    DrawText("ENEMIES:", rightColumnX, currentY, 30, (Color){255, 100, 100, 255});
+    currentY += 45;
+    
+    // Scout enemy
+    bool drewScoutTexture = false;
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (state->enemies[i].type == ENEMY_SCOUT && state->enemies[i].texture.id > 0) {
+            float scale = 32.0f / state->enemies[i].texture.width;
+            Rectangle source = { 0, 0, state->enemies[i].texture.width, state->enemies[i].texture.height };
+            Rectangle dest = { rightColumnX + 5, currentY + 4, 
+                             state->enemies[i].texture.width * scale, 
+                             state->enemies[i].texture.height * scale };
+            Vector2 origin = { 0, 0 };
+            DrawTexturePro(state->enemies[i].texture, source, dest, origin, 0.0f, WHITE);
+            drewScoutTexture = true;
+            break;
+        }
+    }
+    if (!drewScoutTexture) {
+        Vector2 scoutPoints[3] = {
+            {rightColumnX + 20, currentY + 8},
+            {rightColumnX + 10, currentY + 23},
+            {rightColumnX + 30, currentY + 23}
+        };
+        DrawTriangleLines(scoutPoints[0], scoutPoints[1], scoutPoints[2], SKYBLUE);
+    }
+    DrawText("Scout - Fast, drops shotgun", rightColumnX + 45, currentY + 8, 18, WHITE);
+    currentY += 35;
+    
+    // Tank enemy
+    bool drewTankTexture = false;
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (state->enemies[i].type == ENEMY_TANK && state->enemies[i].texture.id > 0) {
+            float scale = 32.0f / state->enemies[i].texture.width;
+            Rectangle source = { 0, 0, state->enemies[i].texture.width, state->enemies[i].texture.height };
+            Rectangle dest = { rightColumnX + 5, currentY + 4, 
+                             state->enemies[i].texture.width * scale, 
+                             state->enemies[i].texture.height * scale };
+            Vector2 origin = { 0, 0 };
+            DrawTexturePro(state->enemies[i].texture, source, dest, origin, 0.0f, WHITE);
+            drewTankTexture = true;
+            break;
+        }
+    }
+    if (!drewTankTexture) {
+        DrawRectangleLines(rightColumnX + 10, currentY + 8, 24, 16, RED);
+    }
+    DrawText("Tank - Strong, drops grenade", rightColumnX + 45, currentY + 8, 18, WHITE);
+    currentY += 50;
+    
+    // Game objective
+    DrawText("OBJECTIVES:", rightColumnX, currentY, 30, (Color){255, 255, 100, 255});
+    currentY += 45;
+    DrawText("• Destroy all asteroids", rightColumnX, currentY, 20, WHITE);
+    currentY += 28;
+    DrawText("• Eliminate enemies for points", rightColumnX, currentY, 20, WHITE);
+    currentY += 28;
+    DrawText("• Survive as long as possible", rightColumnX, currentY, 20, WHITE);
+    
+    // Instructions to continue - centered at bottom (same style as other menus)
+    const char* continueText = "Press Z to start playing or ESC to return to menu";
+    int continueWidth = MeasureText(continueText, OPTIONS_FONT_SIZE);
+    DrawText(continueText, 
+             WINDOW_WIDTH/2 - continueWidth/2, 
+             WINDOW_HEIGHT - 100, 
+             OPTIONS_FONT_SIZE, 
+             WHITE);
+    
+    // Draw version number in the bottom right corner (same as other menus)
     DrawText(VERSION_NUMBER, 
              WINDOW_WIDTH - MeasureText(VERSION_NUMBER, 16) - 10,
              WINDOW_HEIGHT - 25,

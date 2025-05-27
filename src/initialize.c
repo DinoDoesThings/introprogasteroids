@@ -134,6 +134,22 @@ void initGameState(GameState* state) {
         state->enemyBullets[i].base.active = false;
     }
     
+    // Initialize powerups
+    for (int i = 0; i < MAX_POWERUPS; i++) {
+        state->powerups[i].base.active = false;
+        state->powerups[i].texture = (Texture2D){0};
+    }
+    
+    // Initialize weapon system
+    state->currentWeapon = WEAPON_NORMAL;
+    state->normalAmmo = MAX_AMMO;
+    state->shotgunAmmo = 0;
+    state->grenadeAmmo = 0;
+    state->currentAmmo = MAX_AMMO; // Keep for compatibility
+    state->fireTimer = 0.0f;
+    state->shotgunFireTimer = 0.0f;
+    state->grenadeFireTimer = 0.0f;
+    
     state->enemySpawnTimer = ENEMY_SPAWN_TIME;
     
     // Start the first wave instead of directly creating asteroids
@@ -202,6 +218,11 @@ void resetGameData(GameState* state) {
         state->enemyBullets[i].base.active = false;
     }
     
+    // Clear powerups
+    for (int i = 0; i < MAX_POWERUPS; i++) {
+        state->powerups[i].base.active = false;
+    }
+    
     // Unload enemy textures
     for (int i = 0; i < MAX_ENEMIES; i++) {
         if (state->enemies[i].texture.id > 0) {
@@ -216,6 +237,18 @@ void resetGameData(GameState* state) {
         UnloadTexture(state->ship.texture);
         state->ship.texture = (Texture2D){0}; // Reset texture
     }
+    
+    // Reset weapon system
+    state->currentWeapon = WEAPON_NORMAL;
+    state->normalAmmo = MAX_AMMO;
+    state->shotgunAmmo = 0;
+    state->grenadeAmmo = 0;
+    state->currentAmmo = MAX_AMMO; // Keep for compatibility
+    state->isReloading = false;
+    state->reloadTimer = 0.0f;
+    state->fireTimer = 0.0f;
+    state->shotgunFireTimer = 0.0f;
+    state->grenadeFireTimer = 0.0f;
     
     state->enemySpawnTimer = ENEMY_SPAWN_TIME;
     

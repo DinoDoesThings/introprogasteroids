@@ -14,12 +14,22 @@
 #include "particles.h"
 #include "enemies.h"
 #include "asteroids.h"
+#include "particles.h"
+#include "powerups.h"
 #include "initialize.h"
 
 void updateGame(GameState* state, float deltaTime) {
-    // Update fire timer
+    // Update fire timers
     if (state->fireTimer > 0) {
         state->fireTimer -= deltaTime;
+    }
+    
+    if (state->shotgunFireTimer > 0) {
+        state->shotgunFireTimer -= deltaTime;
+    }
+    
+    if (state->grenadeFireTimer > 0) {
+        state->grenadeFireTimer -= deltaTime;
     }
     
     // Update wave message timer if active
@@ -61,16 +71,23 @@ void updateGame(GameState* state, float deltaTime) {
     // Update camera to follow the ship
     state->camera.target = (Vector2){ state->ship.base.x, state->ship.base.y };
     
-    // Handle reloading
+    // Handle reloading (only for normal weapon)
     if (state->isReloading) {
-        state->reloadTimer -= deltaTime;
-        if (state->reloadTimer <= 0) {
+        // Cancel reload if weapon changed away from normal
+        if (state->currentWeapon != WEAPON_NORMAL) {
             state->isReloading = false;
-            state->currentAmmo = MAX_AMMO;
-            
-            // Play reload finish sound
-            if (state->soundLoaded) {
-                PlaySound(state->sounds[SOUND_RELOAD_FINISH]);
+            state->reloadTimer = 0.0f;
+        } else {
+            state->reloadTimer -= deltaTime;
+            if (state->reloadTimer <= 0) {
+                state->isReloading = false;
+                state->normalAmmo = MAX_AMMO;
+                state->currentAmmo = MAX_AMMO; // Keep for compatibility
+                
+                // Play reload finish sound
+                if (state->soundLoaded) {
+                    PlaySound(state->sounds[SOUND_RELOAD_FINISH]);
+                }
             }
         }
     }
@@ -255,6 +272,12 @@ void updateGame(GameState* state, float deltaTime) {
     // Update enemies
     updateEnemies(state, deltaTime);
     
+    // Update powerups
+    updatePowerups(state, deltaTime);
+    
+    // Check powerup collisions
+    checkPowerupCollisions(state);
+    
     // Update invulnerability timer and blinking effect
     if (state->isInvulnerable) {
         // Decrease invulnerability timer
@@ -271,6 +294,106 @@ void updateGame(GameState* state, float deltaTime) {
         if (state->invulnerabilityTimer <= 0.0f) {
             state->isInvulnerable = false;
             state->shipVisible = true; // Make sure ship is visible when invulnerability ends
+        }
+    }
+}
+
+void preloadTextures(GameState* state) {
+    // Load ship texture if not already loaded
+    if (state->ship.texture.id == 0) {
+        state->ship.texture = LoadTexture(SHIP_TEXTURE_PATH);
+    }
+    
+    // Preload enemy textures by creating temporary enemies
+    bool scoutLoaded = false;
+    bool tankLoaded = false;
+    
+    // Check if enemy textures are already loaded
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (state->enemies[i].texture.id > 0) {
+            if (state->enemies[i].type == ENEMY_SCOUT) {
+                scoutLoaded = true;
+            } else if (state->enemies[i].type == ENEMY_TANK) {
+                tankLoaded = true;
+            }
+        }
+    }
+    
+    // Load scout texture if not loaded
+    if (!scoutLoaded) {
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            if (!state->enemies[i].base.active) {
+                state->enemies[i].type = ENEMY_SCOUT;
+                state->enemies[i].texture = LoadTexture(SCOUT_TEXTURE_PATH);
+                state->enemies[i].base.active = false; // Keep inactive, just for texture storage
+                break;
+            }
+        }
+    }
+    
+    // Load tank texture if not loaded
+    if (!tankLoaded) {
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            if (!state->enemies[i].base.active && state->enemies[i].texture.id == 0) {
+                state->enemies[i].type = ENEMY_TANK;
+                state->enemies[i].texture = LoadTexture(TANK_TEXTURE_PATH);
+                state->enemies[i].base.active = false; // Keep inactive, just for texture storage
+                break;
+            }
+        }
+    }
+    
+    // Create temporary powerups with textures for info screen if none exist
+    bool healthLoaded = false;
+    bool shotgunLoaded = false;
+    bool grenadeLoaded = false;
+    
+    // Check if powerup textures are already loaded
+    for (int i = 0; i < MAX_POWERUPS; i++) {
+        if (state->powerups[i].texture.id > 0) {
+            if (state->powerups[i].type == POWERUP_HEALTH) {
+                healthLoaded = true;
+            } else if (state->powerups[i].type == POWERUP_SHOTGUN) {
+                shotgunLoaded = true;
+            } else if (state->powerups[i].type == POWERUP_GRENADE) {
+                grenadeLoaded = true;
+            }
+        }
+    }
+    
+    // Load health powerup texture if not loaded
+    if (!healthLoaded) {
+        for (int i = 0; i < MAX_POWERUPS; i++) {
+            if (!state->powerups[i].base.active && state->powerups[i].texture.id == 0) {
+                state->powerups[i].type = POWERUP_HEALTH;
+                state->powerups[i].texture = LoadTexture(HEALTH_POWERUP_TEXTURE_PATH);
+                state->powerups[i].base.active = false; // Keep inactive, just for texture storage
+                break;
+            }
+        }
+    }
+    
+    // Load shotgun powerup texture if not loaded
+    if (!shotgunLoaded) {
+        for (int i = 0; i < MAX_POWERUPS; i++) {
+            if (!state->powerups[i].base.active && state->powerups[i].texture.id == 0) {
+                state->powerups[i].type = POWERUP_SHOTGUN;
+                state->powerups[i].texture = LoadTexture(SHOTGUN_POWERUP_TEXTURE_PATH);
+                state->powerups[i].base.active = false; // Keep inactive, just for texture storage
+                break;
+            }
+        }
+    }
+    
+    // Load grenade powerup texture if not loaded
+    if (!grenadeLoaded) {
+        for (int i = 0; i < MAX_POWERUPS; i++) {
+            if (!state->powerups[i].base.active && state->powerups[i].texture.id == 0) {
+                state->powerups[i].type = POWERUP_GRENADE;
+                state->powerups[i].texture = LoadTexture(GRENADE_POWERUP_TEXTURE_PATH);
+                state->powerups[i].base.active = false; // Keep inactive, just for texture storage
+                break;
+            }
         }
     }
 }

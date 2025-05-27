@@ -15,11 +15,12 @@
 #include "input.h"
 #include "render.h"
 #include "audio.h"
+#include "powerups.h"
 
 int main(int argc, char* argv[]) {
     // Initialize random seed
     srand(time(NULL));
-        
+
     // Initialize Raylib
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Asteroids");
     SetTargetFPS(60);
@@ -45,6 +46,9 @@ int main(int argc, char* argv[]) {
     // Create game state
     GameState gameState = {0}; // Initialize to zero
     initGameState(&gameState);
+    
+    // Preload all textures for info screen and performance
+    preloadTextures(&gameState);
     
     // Setup buttons
     gameState.playButton = (Rectangle){
@@ -125,7 +129,7 @@ int main(int argc, char* argv[]) {
                     SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
                 }
             } else {
-                // Use default cursor for menus, pause, options, and game over
+                // Use default cursor for menus, pause, options, info, and game over
                 ShowCursor();
                 SetMouseCursor(MOUSE_CURSOR_DEFAULT);
             }
@@ -138,8 +142,15 @@ int main(int argc, char* argv[]) {
                 renderMenu(&gameState);
                 break;
                 
+            case INFO_STATE:
+                handleInfoInput(&gameState);
+                renderInfo(&gameState);
+                break;
+                
             case GAME_STATE:
                 gameState.fireTimer -= deltaTime; // Update fire cooldown timer
+                gameState.shotgunFireTimer -= deltaTime; // Update shotgun cooldown timer
+                gameState.grenadeFireTimer -= deltaTime; // Update grenade cooldown timer
                 handleInput(&gameState);
                 updateGame(&gameState, deltaTime);
                 
@@ -177,6 +188,9 @@ int main(int argc, char* argv[]) {
     if (hasCustomCursor) {
         UnloadTexture(crosshairTexture);
     }
+    
+    // Unload powerup textures
+    unloadPowerupTextures(&gameState);
     
     if (gameState.soundLoaded) {
         for (int i = 0; i < MAX_SOUNDS; i++) {
