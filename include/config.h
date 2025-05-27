@@ -122,6 +122,9 @@
 #define TANK_TEXTURE_PATH "resources/ships/tank.png"
 #define TANK_TEXTURE_SCALE 1.3f   // 30% bigger than scout
 
+// Misc
+#define CROSSHAIR_TEXTURE_PATH "resources/misc/crosshair.png"
+
 // =============================================================================
 // UI SETTINGS
 // =============================================================================
@@ -149,11 +152,5 @@
 #define SCOUT_PARTICLE_RANDOM_RANGE 2.0f
 #define SCOUT_PARTICLE_REAR_OFFSET 0.9f
 #define SCOUT_PARTICLE_SPEED_MULTIPLIER 0.8f
-
-// Future enemy particle settings can be added here easily
-// Example for future enemy types:
-// #define BOMBER_PARTICLE_MIN_RADIUS 3
-// #define BOMBER_PARTICLE_MAX_RADIUS 6
-// etc...
 
 #endif // CONFIG_H

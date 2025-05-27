@@ -279,7 +279,7 @@ void renderGame(const GameState* state) {
     // Draw map boundaries
     DrawRectangleLines(0, 0, MAP_WIDTH, MAP_HEIGHT, BOUNDARY_COLOR);
     
-    // Draw grid lines to help visualize the larger map (optional)
+    // Draw grid lines to help visualize the larger map
     for (int i = 0; i < MAP_WIDTH; i += 200) {
         DrawLine(i, 0, i, MAP_HEIGHT, (Color){20, 20, 40, 100});
     }
@@ -317,9 +317,11 @@ void renderGame(const GameState* state) {
     // Draw enemies
     renderEnemies(state);
     
-    // Draw aiming guide
-    Vector2 mousePosition = GetScreenToWorld2D(GetMousePosition(), state->camera);
-    DrawLine(state->ship.base.x, state->ship.base.y, mousePosition.x, mousePosition.y, GRAY);
+    // Draw aiming guide only in debug mode
+    if (state->Debug) {
+        Vector2 mousePosition = GetScreenToWorld2D(GetMousePosition(), state->camera);
+        DrawLine(state->ship.base.x, state->ship.base.y, mousePosition.x, mousePosition.y, GRAY);
+    }
     
     EndMode2D();
     
