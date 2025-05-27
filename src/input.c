@@ -16,6 +16,12 @@
 #include "initialize.h"
 
 void handleInput(GameState* state) {
+    // BUG FIX: Add pause functionality
+    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_P)) {
+        state->screenState = PAUSE_STATE;
+        return; // Exit early to prevent other input processing
+    }
+    
     // Get mouse position in world space for ship aiming
     Vector2 mousePosition = GetScreenToWorld2D(GetMousePosition(), state->camera);
     
@@ -136,7 +142,7 @@ void handleInput(GameState* state) {
         state->ship.base.dy += SHIP_ACCELERATION * 0.5f * cos(state->ship.base.angle * PI / 180.0f);
     }
 
-    if (IsKeyDown(KEY_R)) {
+    if (IsKeyPressed(KEY_R)) {
         // Reload ammo (only for normal weapon)
         if (!state->isReloading && state->normalAmmo < MAX_AMMO && state->currentWeapon == WEAPON_NORMAL) {
             state->isReloading = true;

@@ -16,6 +16,7 @@
 #include "render.h"
 #include "audio.h"
 #include "powerups.h"
+#include "resources.h" 
 
 int main(int argc, char* argv[]) {
     // Initialize random seed
@@ -24,6 +25,7 @@ int main(int argc, char* argv[]) {
     // Initialize Raylib
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Asteroids");
     SetTargetFPS(60);
+    
     // Load and set the window icon
     Image icon = LoadImage(SHIP_TEXTURE_PATH);
     SetWindowIcon(icon);
@@ -47,8 +49,11 @@ int main(int argc, char* argv[]) {
     GameState gameState = {0}; // Initialize to zero
     initGameState(&gameState);
     
+    // Initialize the resource manager
+    initResources(&gameState);
+    
     // Preload all textures for info screen and performance
-    preloadTextures(&gameState);
+    loadAllTextures(&gameState);
     
     // Setup buttons
     gameState.playButton = (Rectangle){
@@ -189,26 +194,15 @@ int main(int argc, char* argv[]) {
         UnloadTexture(crosshairTexture);
     }
     
-    // Unload powerup textures
-    unloadPowerupTextures(&gameState);
+    // Unload all textures with the resource manager
+    unloadAllTextures(&gameState);
     
+    // Unload sound effects
     if (gameState.soundLoaded) {
         for (int i = 0; i < MAX_SOUNDS; i++) {
             UnloadSound(gameState.sounds[i]);
         }
         CloseAudioDevice();
-    }
-    
-    // Unload ship texture
-    if (gameState.ship.texture.id > 0) {
-        UnloadTexture(gameState.ship.texture);
-    }
-    
-    // Unload enemy textures
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-        if (gameState.enemies[i].texture.id > 0) {
-            UnloadTexture(gameState.enemies[i].texture);
-        }
     }
     
     // Close Raylib

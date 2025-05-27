@@ -28,7 +28,7 @@ void checkPowerupCollisions(GameState* state) {
                             state->health = MAX_HEALTH;
                         }
                         
-                        // Play pickup sound if available
+                        // Play pickup sound 
                         if (state->soundLoaded) {
                             PlaySound(state->sounds[SOUND_POWERUP_PICKUP]);
                         }

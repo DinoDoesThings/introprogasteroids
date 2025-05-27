@@ -4,7 +4,7 @@
 // =============================================================================
 // GAME VERSION
 // =============================================================================
-#define VERSION_NUMBER "v2.0.0"
+#define VERSION_NUMBER "v2.2.0"
 
 // =============================================================================
 // WINDOW & MAP SETTINGS
@@ -121,7 +121,7 @@
 // =============================================================================
 // AUDIO SETTINGS
 // =============================================================================
-#define MAX_SOUNDS 8  // Maximum number of sounds we'll load
+#define MAX_SOUNDS 8  // Maximum number of sounds the program will load
 #define SOUND_SHOOT 0
 #define SOUND_RELOAD_START 1
 #define SOUND_RELOAD_FINISH 2
@@ -187,9 +187,9 @@
 // =============================================================================
 #define MAX_POWERUPS 20
 #define HEALTH_POWERUP_HEAL_AMOUNT 20
-#define HEALTH_POWERUP_DROP_CHANCE 20  // 20% chance
-#define SHOTGUN_DROP_CHANCE 100         // 10% chance for shotgun drop from scouts
-#define GRENADE_DROP_CHANCE 100         // 10% chance for grenade drop from tanks
+#define HEALTH_POWERUP_DROP_CHANCE 10  // 10% chance
+#define SHOTGUN_DROP_CHANCE 20         // 20% chance for shotgun drop from scouts
+#define GRENADE_DROP_CHANCE 20         // 20% chance for grenade drop from tanks
 #define POWERUP_LIFETIME 15.0f  // Powerups last 15 seconds
 #define POWERUP_PULSE_SPEED 3.0f  // Speed of pulsing animation
 

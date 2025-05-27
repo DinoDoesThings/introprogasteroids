@@ -1,7 +1,7 @@
 #ifndef INITIALIZE_H
 #define INITIALIZE_H
 
-//custom headers
+// custom headers
 #include "typedefs.h"
 
 void startWave(GameState* state);

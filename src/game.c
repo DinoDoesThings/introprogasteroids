@@ -17,6 +17,7 @@
 #include "particles.h"
 #include "powerups.h"
 #include "initialize.h"
+#include "resources.h"
 
 void updateGame(GameState* state, float deltaTime) {
     // Update fire timers
@@ -107,7 +108,7 @@ void updateGame(GameState* state, float deltaTime) {
             
             // Check for collision with asteroids
             for (int j = 0; j < MAX_ASTEROIDS; j++) {
-                if (state->asteroids[j].base.active && checkCollision(&state->bullets[i], &state->asteroids[j].base)) {
+                if (state->asteroids[j].base.active && checkCollision((GameObject*)&state->bullets[i], &state->asteroids[j].base)) {
                     state->bullets[i].active = false;
                     splitAsteroid(state, j);
                     
@@ -299,101 +300,6 @@ void updateGame(GameState* state, float deltaTime) {
 }
 
 void preloadTextures(GameState* state) {
-    // Load ship texture if not already loaded
-    if (state->ship.texture.id == 0) {
-        state->ship.texture = LoadTexture(SHIP_TEXTURE_PATH);
-    }
-    
-    // Preload enemy textures by creating temporary enemies
-    bool scoutLoaded = false;
-    bool tankLoaded = false;
-    
-    // Check if enemy textures are already loaded
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-        if (state->enemies[i].texture.id > 0) {
-            if (state->enemies[i].type == ENEMY_SCOUT) {
-                scoutLoaded = true;
-            } else if (state->enemies[i].type == ENEMY_TANK) {
-                tankLoaded = true;
-            }
-        }
-    }
-    
-    // Load scout texture if not loaded
-    if (!scoutLoaded) {
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            if (!state->enemies[i].base.active) {
-                state->enemies[i].type = ENEMY_SCOUT;
-                state->enemies[i].texture = LoadTexture(SCOUT_TEXTURE_PATH);
-                state->enemies[i].base.active = false; // Keep inactive, just for texture storage
-                break;
-            }
-        }
-    }
-    
-    // Load tank texture if not loaded
-    if (!tankLoaded) {
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            if (!state->enemies[i].base.active && state->enemies[i].texture.id == 0) {
-                state->enemies[i].type = ENEMY_TANK;
-                state->enemies[i].texture = LoadTexture(TANK_TEXTURE_PATH);
-                state->enemies[i].base.active = false; // Keep inactive, just for texture storage
-                break;
-            }
-        }
-    }
-    
-    // Create temporary powerups with textures for info screen if none exist
-    bool healthLoaded = false;
-    bool shotgunLoaded = false;
-    bool grenadeLoaded = false;
-    
-    // Check if powerup textures are already loaded
-    for (int i = 0; i < MAX_POWERUPS; i++) {
-        if (state->powerups[i].texture.id > 0) {
-            if (state->powerups[i].type == POWERUP_HEALTH) {
-                healthLoaded = true;
-            } else if (state->powerups[i].type == POWERUP_SHOTGUN) {
-                shotgunLoaded = true;
-            } else if (state->powerups[i].type == POWERUP_GRENADE) {
-                grenadeLoaded = true;
-            }
-        }
-    }
-    
-    // Load health powerup texture if not loaded
-    if (!healthLoaded) {
-        for (int i = 0; i < MAX_POWERUPS; i++) {
-            if (!state->powerups[i].base.active && state->powerups[i].texture.id == 0) {
-                state->powerups[i].type = POWERUP_HEALTH;
-                state->powerups[i].texture = LoadTexture(HEALTH_POWERUP_TEXTURE_PATH);
-                state->powerups[i].base.active = false; // Keep inactive, just for texture storage
-                break;
-            }
-        }
-    }
-    
-    // Load shotgun powerup texture if not loaded
-    if (!shotgunLoaded) {
-        for (int i = 0; i < MAX_POWERUPS; i++) {
-            if (!state->powerups[i].base.active && state->powerups[i].texture.id == 0) {
-                state->powerups[i].type = POWERUP_SHOTGUN;
-                state->powerups[i].texture = LoadTexture(SHOTGUN_POWERUP_TEXTURE_PATH);
-                state->powerups[i].base.active = false; // Keep inactive, just for texture storage
-                break;
-            }
-        }
-    }
-    
-    // Load grenade powerup texture if not loaded
-    if (!grenadeLoaded) {
-        for (int i = 0; i < MAX_POWERUPS; i++) {
-            if (!state->powerups[i].base.active && state->powerups[i].texture.id == 0) {
-                state->powerups[i].type = POWERUP_GRENADE;
-                state->powerups[i].texture = LoadTexture(GRENADE_POWERUP_TEXTURE_PATH);
-                state->powerups[i].base.active = false; // Keep inactive, just for texture storage
-                break;
-            }
-        }
-    }
+    // This function is now much simpler as I delegated the work to the resource manager
+    loadAllTextures(state);
 }

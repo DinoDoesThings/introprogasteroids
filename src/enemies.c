@@ -15,6 +15,7 @@
 #include "initialize.h"
 #include "particles.h"
 #include "powerups.h"
+#include "resources.h"
 
 void spawnEnemy(GameState* state, EnemyType type) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
@@ -35,11 +36,17 @@ void spawnEnemy(GameState* state, EnemyType type) {
             if (type == ENEMY_TANK) {
                 state->enemies[i].base.radius = TANK_ENEMY_RADIUS;
                 state->enemies[i].health = TANK_ENEMY_HEALTH;
-                state->enemies[i].texture = LoadTexture(TANK_TEXTURE_PATH);
+                // Only load texture if not already loaded
+                if (state->enemies[i].texture.id == 0) {
+                    state->enemies[i].texture = loadTextureOnce(TANK_TEXTURE_PATH);
+                }
             } else {
                 state->enemies[i].base.radius = SCOUT_ENEMY_RADIUS;
                 state->enemies[i].health = SCOUT_ENEMY_HEALTH;
-                state->enemies[i].texture = LoadTexture(SCOUT_TEXTURE_PATH);
+                // Only load texture if not already loaded
+                if (state->enemies[i].texture.id == 0) {
+                    state->enemies[i].texture = loadTextureOnce(SCOUT_TEXTURE_PATH);
+                }
             }
             
             // Spawn enemies away from the player

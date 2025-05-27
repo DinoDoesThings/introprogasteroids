@@ -83,8 +83,6 @@ void splitAsteroid(GameState* state, int index) {
             }
         }
         
-        // BUG FIX: When splitting, we remove 1 asteroid but add 2, so net increase is +1
-        // We should increment the count, not decrement it
         state->asteroidsRemaining++;
     } else {
         // Only decrement when the smallest asteroid is destroyed (no split)

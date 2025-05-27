@@ -8,6 +8,7 @@
 #include "config.h"
 #include "audio.h"
 #include "collisions.h"
+#include "resources.h" 
 
 
 void spawnHealthPowerup(GameState* state, float x, float y) {
@@ -30,10 +31,8 @@ void spawnHealthPowerup(GameState* state, float x, float y) {
             state->powerups[i].lifetime = POWERUP_LIFETIME;
             state->powerups[i].pulseTimer = 0.0f;
             
-            // Load texture if not already loaded
-            if (state->powerups[i].texture.id == 0) {
-                state->powerups[i].texture = LoadTexture(HEALTH_POWERUP_TEXTURE_PATH);
-            }
+            // Try to load health powerup texture
+            state->powerups[i].texture = loadTextureOnce(HEALTH_POWERUP_TEXTURE_PATH);
             
             break;
         }
@@ -55,7 +54,7 @@ void spawnShotgunPowerup(GameState* state, float x, float y) {
             state->powerups[i].pulseTimer = 0.0f;
             
             // Try to load shotgun powerup texture
-            state->powerups[i].texture = LoadTexture(SHOTGUN_POWERUP_TEXTURE_PATH);
+            state->powerups[i].texture = loadTextureOnce(SHOTGUN_POWERUP_TEXTURE_PATH);
             
             break;
         }
@@ -77,7 +76,7 @@ void spawnGrenadePowerup(GameState* state, float x, float y) {
             state->powerups[i].pulseTimer = 0.0f;
             
             // Try to load grenade powerup texture
-            state->powerups[i].texture = LoadTexture(GRENADE_POWERUP_TEXTURE_PATH);
+            state->powerups[i].texture = loadTextureOnce(GRENADE_POWERUP_TEXTURE_PATH);
             
             break;
         }
@@ -142,11 +141,10 @@ void updatePowerups(GameState* state, float deltaTime) {
     }
 }
 
+// This function can now be simplified as the resource manager handles the real unloading
 void unloadPowerupTextures(GameState* state) {
+    // Just reset the texture references, actual unloading happens in the resource manager
     for (int i = 0; i < MAX_POWERUPS; i++) {
-        if (state->powerups[i].texture.id > 0) {
-            UnloadTexture(state->powerups[i].texture);
-            state->powerups[i].texture = (Texture2D){0};
-        }
+        state->powerups[i].texture = (Texture2D){0};
     }
 }

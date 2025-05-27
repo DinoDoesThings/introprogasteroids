@@ -223,21 +223,6 @@ void resetGameData(GameState* state) {
         state->powerups[i].base.active = false;
     }
     
-    // Unload enemy textures
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-        if (state->enemies[i].texture.id > 0) {
-            UnloadTexture(state->enemies[i].texture);
-            state->enemies[i].texture = (Texture2D){0}; // Reset texture
-        }
-        state->enemies[i].base.active = false;
-    }
-    
-    // Unload ship texture
-    if (state->ship.texture.id > 0) {
-        UnloadTexture(state->ship.texture);
-        state->ship.texture = (Texture2D){0}; // Reset texture
-    }
-    
     // Reset weapon system
     state->currentWeapon = WEAPON_NORMAL;
     state->normalAmmo = MAX_AMMO;
@@ -251,6 +236,10 @@ void resetGameData(GameState* state) {
     state->grenadeFireTimer = 0.0f;
     
     state->enemySpawnTimer = ENEMY_SPAWN_TIME;
+
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        state->enemies[i].base.active = false;
+    }
     
     // Start the first wave
     startWave(state);
