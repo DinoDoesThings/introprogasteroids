@@ -105,6 +105,19 @@ void handleInput(GameState* state) {
             }
             printf("Debug: Destroyed %d enemies\n", destroyedCount);
         }
+        
+        // F6: Skip to next wave
+        if (IsKeyPressed(KEY_F6)) {
+            // Force transition to the next wave
+            state->inWaveTransition = true;
+            state->waveDelayTimer = WAVE_DELAY;
+            
+            // Display wave complete message
+            sprintf(state->waveMessage, "WAVE %d COMPLETE", state->currentWave);
+            state->waveMessageTimer = WAVE_DELAY;
+            
+            printf("Debug: Skipping to wave %d\n", state->currentWave + 1);
+        }
     }
     
     // Continuous key presses
@@ -362,17 +375,32 @@ void handleOptionsInput(GameState* state) {
         state->screenState = state->previousScreenState;  // Return to wherever we came from
     }
     
+    Rectangle adjustedMusicSliderRect = {
+        state->musicVolumeSlider.x,
+        state->musicVolumeSlider.y + 40, 
+        state->musicVolumeSlider.width,
+        state->musicVolumeSlider.height
+    };
+    
     // Handle volume slider interaction
     bool isMouseOverSlider = CheckCollisionPointRec(mousePoint, state->volumeSlider);
+    bool isMouseOverMusicSlider = CheckCollisionPointRec(mousePoint, adjustedMusicSliderRect);
     
     // Start dragging
-    if (isMouseOverSlider && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        state->isDraggingSlider = true;
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (isMouseOverSlider) {
+            state->isDraggingSlider = true;
+            state->isDraggingMusicSlider = false;
+        } else if (isMouseOverMusicSlider) {
+            state->isDraggingSlider = false;
+            state->isDraggingMusicSlider = true;
+        }
     }
     
     // Stop dragging
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
         state->isDraggingSlider = false;
+        state->isDraggingMusicSlider = false;
     }
     
     // Update slider if dragging
@@ -386,6 +414,19 @@ void handleOptionsInput(GameState* state) {
         newVolume = newVolume > 1.0f ? 1.0f : newVolume;
         
         updateSoundVolume(state, newVolume);
+    }
+
+     // Update music slider if dragging
+    if (state->isDraggingMusicSlider) {
+        // Calculate volume based on mouse position
+        float relativeX = mousePoint.x - state->musicVolumeSlider.x;
+        float newVolume = relativeX / state->musicVolumeSlider.width;
+        
+        // Clamp volume between 0 and 1
+        newVolume = newVolume < 0.0f ? 0.0f : newVolume;
+        newVolume = newVolume > 1.0f ? 1.0f : newVolume;
+        
+        updateMusicVolume(state, newVolume);
     }
 }
 

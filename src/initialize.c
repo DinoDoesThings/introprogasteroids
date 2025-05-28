@@ -49,6 +49,19 @@ void startWave(GameState* state) {
         state->enemySpawnTimer = FLT_MAX;
     }
     
+    // Reset enemy spawn counter for new wave
+    state->enemiesSpawnedThisWave = 0;
+    state->EnemySpawnComplete = 0;  // Reset the enemy quota flag
+    
+    // Calculate max enemies for this wave (only applicable for waves with enemies)
+    if (state->currentWave >= SCOUT_START_WAVE) {
+        // BASE_ENEMY_MAX for wave 3, increment by ENEMY_INCREMENT each wave after
+        state->maxEnemiesThisWave = BASE_ENEMY_MAX + 
+            (state->currentWave - SCOUT_START_WAVE) * ENEMY_INCREMENT;
+    } else {
+        state->maxEnemiesThisWave = 0;  // No enemies allowed before SCOUT_START_WAVE
+    }
+    
     // Display wave message
     sprintf(state->waveMessage, "WAVE %d", state->currentWave);
     state->waveMessageTimer = 3.0f;  // Show message for 3 seconds
@@ -122,14 +135,18 @@ void initGameState(GameState* state) {
     state->screenState = MENU_STATE;
     state->previousScreenState = MENU_STATE;  // Default previous state
     state->soundLoaded = false;
+    state->musicLoaded = false;
+    state->currentMusic = NULL;  // Initialize the pointer to NULL
     state->currentWave = 1;
     state->asteroidsRemaining = 0;
     state->waveDelayTimer = 0.0f;
     state->inWaveTransition = false;
     state->waveMessage[0] = '\0';
     state->waveMessageTimer = 0.0f;
-    state->soundVolume = 1.0f;  // Default to full volume
+    state->soundVolume = 0.5f;  // Default to half volume for sound
+    state->musicVolume = 0.5f;  // Default to half volume for music
     state->isDraggingSlider = false;
+    state->isDraggingMusicSlider = false;
     state->invulnerabilityTimer = 0.0f;
     state->isInvulnerable = false;
     state->blinkTimer = 0.0f;

@@ -576,9 +576,9 @@ void renderGame(const GameState* state) {
         // Draw debug information at bottom left
         int debugStartY = WINDOW_HEIGHT - 210; // Start 200 pixels from bottom
         
-        DrawText(TextFormat("FPS: %d", GetFPS()), 10, debugStartY, 20, WHITE);
-        DrawText(TextFormat("Ship Position: (%.1f, %.1f)", state->ship.base.x, state->ship.base.y), 10, debugStartY + 30, 20, WHITE);
-        DrawText(TextFormat("Ship Velocity: (%.1f, %.1f)", state->ship.base.dx, state->ship.base.dy), 10, debugStartY + 60, 20, WHITE);
+        DrawText(TextFormat("FPS: %d", GetFPS()), 10, debugStartY - 30, 20, WHITE);
+        DrawText(TextFormat("Ship Position: (%.1f, %.1f)", state->ship.base.x, state->ship.base.y), 10, debugStartY, 20, WHITE);
+        DrawText(TextFormat("Ship Velocity: (%.1f, %.1f)", state->ship.base.dx, state->ship.base.dy), 10, debugStartY + 30, 20, WHITE);
 
         // Count active asteroids and enemies
         int activeAsteroids = 0;
@@ -595,10 +595,11 @@ void renderGame(const GameState* state) {
             }
         }
         
-        DrawText(TextFormat("Active Asteroids: %d", activeAsteroids), 10, debugStartY + 90, 20, WHITE);
-        DrawText(TextFormat("Active Enemies: %d", activeEnemies), 10, debugStartY + 120, 20, WHITE);
-        DrawText("F4: Kill all asteroids", 10, debugStartY + 150, 20, YELLOW);
-        DrawText("F5: Kill all enemies", 10, debugStartY + 180, 20, YELLOW);
+        DrawText(TextFormat("Active Asteroids: %d", activeAsteroids), 10, debugStartY + 60, 20, WHITE);
+        DrawText(TextFormat("Active Enemies: %d", activeEnemies), 10, debugStartY + 90, 20, WHITE);
+        DrawText("F4: Kill all asteroids", 10, debugStartY + 120, 20, YELLOW);
+        DrawText("F5: Kill all enemies", 10, debugStartY + 150, 20, YELLOW);
+        DrawText("F6: Skip to Next Wave", 10, debugStartY + 180, 20, YELLOW);
     }
     
     // Draw wave counter in bottom right
@@ -607,12 +608,34 @@ void renderGame(const GameState* state) {
              WINDOW_HEIGHT - 30,
              20, WHITE);
              
-    // Draw asteroids remaining counter if in debug mode
-    if (state->Debug) {
-        DrawText(TextFormat("Asteroids: %d", state->asteroidsRemaining),
-                 WINDOW_WIDTH - MeasureText(TextFormat("Asteroids: %d", state->asteroidsRemaining), 20) - 10,
-                 WINDOW_HEIGHT - 60,
-                 20, WHITE);
+
+    DrawText(TextFormat("Asteroids: %d", state->asteroidsRemaining),
+            WINDOW_WIDTH - MeasureText(TextFormat("Asteroids: %d", state->asteroidsRemaining), 20) - 10,
+            WINDOW_HEIGHT - 60,
+            20, WHITE);
+    
+            // Draw enemies counter (only if we're in a wave that has enemies)
+    if (state->currentWave >= SCOUT_START_WAVE) {
+        int enemiesRemaining = 0;
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            if (state->enemies[i].base.active) {
+                enemiesRemaining++;
+            }
+        }
+        
+        // Calculate enemies that haven't been spawned yet
+        int enemiesNotYetSpawned = 0;
+        if (state->maxEnemiesThisWave > state->enemiesSpawnedThisWave) {
+            enemiesNotYetSpawned = state->maxEnemiesThisWave - state->enemiesSpawnedThisWave;
+        }
+        
+        // Total remaining = currently active + not yet spawned
+        int totalEnemiesRemaining = enemiesRemaining + enemiesNotYetSpawned;
+        
+        DrawText(TextFormat("Enemies: %d/%d", totalEnemiesRemaining, state->maxEnemiesThisWave),
+                WINDOW_WIDTH - MeasureText(TextFormat("Enemies: %d/%d", totalEnemiesRemaining, state->maxEnemiesThisWave), 20) - 10,
+                WINDOW_HEIGHT - 90,
+                20, WHITE);
     }
     
     // Draw wave message if timer is active
@@ -903,6 +926,66 @@ void renderOptions(const GameState* state) {
         volumePercentText,
         WINDOW_WIDTH/2 - volumePercentWidth/2,
         state->volumeSlider.y + state->volumeSlider.height + 20,
+        OPTIONS_FONT_SIZE,
+        WHITE
+    );
+
+    // Draw music volume label
+    const char* musicVolumeText = "MUSIC VOLUME";
+    int musicVolumeTextWidth = MeasureText(musicVolumeText, OPTIONS_FONT_SIZE);
+    DrawText(
+        musicVolumeText,
+        WINDOW_WIDTH/2 - musicVolumeTextWidth/2,
+        state->musicVolumeSlider.y,
+        OPTIONS_FONT_SIZE,
+        WHITE
+    );
+    
+    // Draw music slider background
+    Rectangle musicSliderBackground = {
+        state->musicVolumeSlider.x,
+        state->musicVolumeSlider.y + 40,
+        state->musicVolumeSlider.width,
+        state->musicVolumeSlider.height
+    };
+    DrawRectangleRec(musicSliderBackground, DARKGRAY);
+    
+    // Draw filled music slider part based on current volume
+    Rectangle filledMusicSlider = {
+        state->musicVolumeSlider.x,
+        state->musicVolumeSlider.y + 40,
+        state->musicVolumeSlider.width * state->musicVolume,
+        state->musicVolumeSlider.height
+    };
+    DrawRectangleRec(filledMusicSlider, (Color){100, 100, 255, 255});  // Different color for music
+    
+    // Draw music slider border
+    Rectangle musicSliderBorder = {
+        state->musicVolumeSlider.x,
+        state->musicVolumeSlider.y + 40,
+        state->musicVolumeSlider.width,
+        state->musicVolumeSlider.height
+    };
+    DrawRectangleLinesEx(musicSliderBorder, 2, WHITE);
+    
+    // Draw music slider handle
+    float musicHandleX = state->musicVolumeSlider.x + (state->musicVolumeSlider.width * state->musicVolume);
+    DrawRectangle(
+        musicHandleX - 5, 
+        state->musicVolumeSlider.y + 35, 
+        10, 
+        state->musicVolumeSlider.height + 10,
+        WHITE
+    );
+    
+    // Draw music volume percentage
+    char musicVolumePercentText[10];
+    sprintf(musicVolumePercentText, "%d%%", (int)(state->musicVolume * 100));
+    int musicVolumePercentWidth = MeasureText(musicVolumePercentText, OPTIONS_FONT_SIZE);
+    DrawText(
+        musicVolumePercentText,
+        WINDOW_WIDTH/2 - musicVolumePercentWidth/2,
+        state->musicVolumeSlider.y + 35 + state->musicVolumeSlider.height + 20,
         OPTIONS_FONT_SIZE,
         WHITE
     );

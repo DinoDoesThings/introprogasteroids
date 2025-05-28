@@ -98,6 +98,13 @@ int main(int argc, char* argv[]) {
         SLIDER_HEIGHT
     };
 
+    gameState.musicVolumeSlider = (Rectangle){
+        WINDOW_WIDTH/2 - SLIDER_WIDTH/2,
+        WINDOW_HEIGHT/2 + 80,  // Position below the sound volume slider
+        SLIDER_WIDTH,
+        SLIDER_HEIGHT
+    };
+
     gameState.mainMenuButton = (Rectangle){
     WINDOW_WIDTH/2 - BUTTON_WIDTH/2,
     WINDOW_HEIGHT/2 + (BUTTON_HEIGHT + 20),
@@ -111,11 +118,21 @@ int main(int argc, char* argv[]) {
     
     // Load sounds
     loadSounds(&gameState);
+    loadMusic(&gameState);
+
+    // Start playing menu music
+    PlayMusicStream(gameState.menuMusic);
     
     // Game loop
     while (!WindowShouldClose() && gameState.running) {
         float deltaTime = GetFrameTime();
         
+
+        // Update music streaming for any active music
+        if (gameState.musicLoaded && gameState.currentMusic != NULL) {
+            UpdateMusicStream(*gameState.currentMusic);
+        }
+
         // Check window focus status
         bool currentlyFocused = IsWindowFocused();
         if (gameState.windowFocused && !currentlyFocused && gameState.screenState == GAME_STATE) {
@@ -143,6 +160,10 @@ int main(int argc, char* argv[]) {
         
         switch (gameState.screenState) {
             case MENU_STATE:
+                // Switch to menu music when returning to menu
+                if (gameState.musicLoaded && gameState.currentMusic != &gameState.menuMusic) {
+                    switchMusic(&gameState, &gameState.menuMusic);
+                }
                 handleMenuInput(&gameState);
                 renderMenu(&gameState);
                 break;
@@ -153,6 +174,19 @@ int main(int argc, char* argv[]) {
                 break;
                 
             case GAME_STATE:
+                // Start game with phase1 music unless we're already playing phase2
+                if (gameState.musicLoaded) {
+                    if (gameState.currentMusic == &gameState.menuMusic) {
+                        // Coming from menu - switch to phase1
+                        switchMusic(&gameState, &gameState.phase1Music);
+                    } else if (gameState.currentWave >= TANK_START_WAVE && 
+                               gameState.currentMusic == &gameState.phase1Music) {
+                        // We've reached wave 5 - switch to phase2
+                        switchMusic(&gameState, &gameState.phase2Music);
+                    }
+                    // Otherwise keep playing current phase music
+                }
+                
                 gameState.fireTimer -= deltaTime; // Update fire cooldown timer
                 gameState.shotgunFireTimer -= deltaTime; // Update shotgun cooldown timer
                 gameState.grenadeFireTimer -= deltaTime; // Update grenade cooldown timer
@@ -173,16 +207,19 @@ int main(int argc, char* argv[]) {
                 break;
                 
             case PAUSE_STATE:
+                // Keep playing current game music in pause
                 handlePauseInput(&gameState);
                 renderPause(&gameState);
                 break;
                 
             case OPTIONS_STATE:
+                // Keep playing current music in options
                 handleOptionsInput(&gameState);
                 renderOptions(&gameState);
                 break;
                 
             case GAME_OVER_STATE:
+                // Keep playing current phase music for game over
                 handleGameOverInput(&gameState);
                 renderGameOver(&gameState);
                 break;
@@ -204,6 +241,9 @@ int main(int argc, char* argv[]) {
         }
         CloseAudioDevice();
     }
+
+    // Unload music
+    unloadMusic(&gameState);
     
     // Close Raylib
     CloseWindow();

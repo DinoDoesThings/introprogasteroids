@@ -134,7 +134,7 @@ void updatePowerups(GameState* state, float deltaTime) {
             if (checkCollision(&state->ship.base, &powerup->base)) {
                 if (powerup->type == POWERUP_HEALTH) {
                     // Heal player
-                    state->health += 50;
+                    state->health += HEALTH_POWERUP_HEAL_AMOUNT;
                     if (state->health > MAX_HEALTH) {
                         state->health = MAX_HEALTH;
                     }

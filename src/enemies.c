@@ -234,7 +234,9 @@ void updateEnemies(GameState* state, float deltaTime) {
     // Update enemy spawn timer 
     if (state->currentWave >= SCOUT_START_WAVE && !state->inWaveTransition) {
         state->enemySpawnTimer -= deltaTime;
-        if (state->enemySpawnTimer <= 0) {
+        
+        // Only spawn if we haven't reached max enemies for this wave
+        if (state->enemySpawnTimer <= 0 && state->enemiesSpawnedThisWave < state->maxEnemiesThisWave) {
             // Determine which enemy type to spawn
             EnemyType type = ENEMY_SCOUT; // Default to scout
             
@@ -250,6 +252,14 @@ void updateEnemies(GameState* state, float deltaTime) {
             }
             
             spawnEnemy(state, type);
+            
+            // Increment counter for enemies spawned this wave
+            state->enemiesSpawnedThisWave++;
+            
+            // Check if we've spawned all enemies for this wave
+            if (state->enemiesSpawnedThisWave >= state->maxEnemiesThisWave) {
+                state->EnemySpawnComplete = 1;
+            }
             
             // Reset timer with some randomness
             float baseTime = ENEMY_SPAWN_TIME - (state->currentWave - SCOUT_START_WAVE) * 1.0f;

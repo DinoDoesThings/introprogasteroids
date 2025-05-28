@@ -139,6 +139,7 @@ typedef struct {
     Rectangle optionsButton;
     Rectangle backButton;
     Rectangle volumeSlider;
+    Rectangle musicVolumeSlider;
     Rectangle mainMenuButton;
     bool windowFocused;
     Sound sounds[MAX_SOUNDS];
@@ -152,10 +153,20 @@ typedef struct {
     float waveMessageTimer;
     float soundVolume;
     bool isDraggingSlider;
+    bool isDraggingMusicSlider;
+    Music menuMusic;
+    Music phase1Music;
+    Music phase2Music;
+    Music* currentMusic;  // Pointer to track which music is currently active
+    bool musicLoaded;
+    float musicVolume;
     float invulnerabilityTimer;
     bool isInvulnerable;
     float blinkTimer;
     bool shipVisible;
+    int enemiesSpawnedThisWave;
+    int maxEnemiesThisWave;
+    int EnemySpawnComplete;
 } GameState;
 
 typedef struct {

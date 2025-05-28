@@ -4,7 +4,7 @@
 // =============================================================================
 // GAME VERSION
 // =============================================================================
-#define VERSION_NUMBER "v2.3.0"
+#define VERSION_NUMBER "v3.0.0 (Music!)"
 
 // =============================================================================
 // WINDOW & MAP SETTINGS
@@ -74,11 +74,11 @@
 #define MAX_ENEMIES 20
 #define MAX_ENEMY_BULLETS 100
 #define ENEMY_BULLET_SPEED 6.0f
-#define ENEMY_DETECTION_RADIUS 500.0f
+#define ENEMY_DETECTION_RADIUS 800.0f // Change this to adjust how far enemies can detect the player
 #define ENEMY_SPAWN_TIME 10.0f
 
 // Tank Enemy
-#define TANK_ENEMY_RADIUS 40.0f
+#define TANK_ENEMY_RADIUS 30.0f // This changes the size of the tank enemy
 #define TANK_ENEMY_SPEED 1.2f
 #define TANK_ENEMY_HEALTH 100
 #define TANK_ENEMY_BULLET_DAMAGE 40
@@ -93,15 +93,15 @@
 #define TANK_GRENADE_EXPLOSION_COUNT 8    // Number of bullets (8 directions: cardinal + intercardinal)
 
 // Scout Enemy
-#define SCOUT_ENEMY_RADIUS 20.0f
+#define SCOUT_ENEMY_RADIUS 20.0f // This changes the size of the scout enemy
 #define SCOUT_ENEMY_SPEED 3.5f
 #define SCOUT_ENEMY_HEALTH 30
 #define SCOUT_ENEMY_BULLET_DAMAGE 5
 #define SCOUT_ENEMY_FIRE_RATE 0.1f
 #define SCOUT_ENEMY_BURST_COUNT 5
 #define SCOUT_ENEMY_BURST_DELAY 0.1f
-#define SCOUT_ENEMY_ATTACK_DISTANCE 250.0f
-#define SCOUT_ENEMY_SCORE 300
+#define SCOUT_ENEMY_ATTACK_DISTANCE 300.0f
+#define SCOUT_ENEMY_SCORE 200
 
 // Scout Group Behavior
 #define SCOUT_GROUP_RADIUS 250.0f       // Distance to consider scouts as part of same group
@@ -117,6 +117,8 @@
 #define SCOUT_START_WAVE 3
 #define TANK_START_WAVE 5
 #define WAVE_DELAY 3.0f  // Delay between waves in seconds
+#define BASE_ENEMY_MAX 5 // Initial max enemies in wave 3 
+#define ENEMY_INCREMENT 3 
 
 // =============================================================================
 // AUDIO SETTINGS

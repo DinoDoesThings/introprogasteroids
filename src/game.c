@@ -257,8 +257,15 @@ void updateGame(GameState* state, float deltaTime) {
         }
     }
     
-    // If all asteroids and enemies are destroyed, transition to next wave
-    if (allAsteroidsDestroyed && allEnemiesDestroyed && !state->inWaveTransition) {
+    // If all asteroids are destroyed and either:
+    // 1. We're in a wave before enemies spawn, OR
+    // 2. We've spawned all enemies for this wave AND all enemies are destroyed
+    bool waveComplete = allAsteroidsDestroyed &&
+                       ((state->currentWave < SCOUT_START_WAVE) ||
+                        (state->EnemySpawnComplete && allEnemiesDestroyed));
+                        
+    // If wave is complete, transition to next wave
+    if (waveComplete && !state->inWaveTransition) {
         state->inWaveTransition = true;
         state->waveDelayTimer = WAVE_DELAY;
         
