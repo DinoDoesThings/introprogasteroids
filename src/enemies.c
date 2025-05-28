@@ -36,17 +36,15 @@ void spawnEnemy(GameState* state, EnemyType type) {
             if (type == ENEMY_TANK) {
                 state->enemies[i].base.radius = TANK_ENEMY_RADIUS;
                 state->enemies[i].health = TANK_ENEMY_HEALTH;
-                // Only load texture if not already loaded
-                if (state->enemies[i].texture.id == 0) {
-                    state->enemies[i].texture = loadTextureOnce(TANK_TEXTURE_PATH);
-                }
+                
+                // Assign the pre-loaded tank texture without loading it again
+                state->enemies[i].texture = loadTextureOnce(TANK_TEXTURE_PATH);
             } else {
                 state->enemies[i].base.radius = SCOUT_ENEMY_RADIUS;
                 state->enemies[i].health = SCOUT_ENEMY_HEALTH;
-                // Only load texture if not already loaded
-                if (state->enemies[i].texture.id == 0) {
-                    state->enemies[i].texture = loadTextureOnce(SCOUT_TEXTURE_PATH);
-                }
+                
+                // Assign the pre-loaded scout texture without loading it again
+                state->enemies[i].texture = loadTextureOnce(SCOUT_TEXTURE_PATH);
             }
             
             // Spawn enemies away from the player
@@ -114,7 +112,11 @@ void fireEnemyWeapon(GameState* state, Enemy* enemy) {
             
             // Play shooting sound effect
             if (state->soundLoaded) {
-                PlaySound(state->sounds[SOUND_ENEMY_SHOOT]);
+                if (enemy->type == ENEMY_TANK) {
+                    PlaySound(state->sounds[SOUND_TANK_SHOOT]);
+                } else {
+                    PlaySound(state->sounds[SOUND_SCOUT_SHOOT]);
+                }
             }
             
             break;
