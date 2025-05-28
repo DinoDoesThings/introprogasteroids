@@ -25,6 +25,17 @@ typedef struct {
 } Asteroid;
 
 typedef struct {
+    float x;
+    float y;
+    float dx;
+    float dy;
+    float radius;
+    float angle;
+    float rotationSpeed;
+    bool active;
+} MenuAsteroid;
+
+typedef struct {
     Vector2 position;
     Vector2 velocity;
     float radius;
@@ -77,7 +88,8 @@ typedef struct {
 typedef enum {
     POWERUP_HEALTH,
     POWERUP_SHOTGUN,
-    POWERUP_GRENADE
+    POWERUP_GRENADE,
+    POWERUP_LIFE
 } PowerupType;
 
 typedef enum {
@@ -105,10 +117,10 @@ typedef struct {
     WeaponType currentWeapon;
     int normalAmmo;
     int shotgunAmmo;
-    int grenadeAmmo;           // New field for grenade ammo
+    int grenadeAmmo;           // field for grenade ammo
     float fireTimer;           // General fire timer
     float shotgunFireTimer;    // Specific timer for shotgun cooldown
-    float grenadeFireTimer;    // New field for grenade cooldown
+    float grenadeFireTimer;    // Specific timer for grenade cooldown
     int score;
     int lives;
     int health;
@@ -120,6 +132,7 @@ typedef struct {
     bool Debug;
     GameScreenState screenState;
     GameScreenState previousScreenState;
+    MenuAsteroid menuAsteroids[MAX_MENU_ASTEROIDS];
     Rectangle playButton;
     Rectangle quitButton;
     Rectangle resumeButton;
@@ -139,7 +152,6 @@ typedef struct {
     float waveMessageTimer;
     float soundVolume;
     bool isDraggingSlider;
-    // Add these fields for invulnerability
     float invulnerabilityTimer;
     bool isInvulnerable;
     float blinkTimer;

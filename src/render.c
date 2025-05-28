@@ -48,6 +48,9 @@ void renderPowerups(const GameState* state) {
                     case POWERUP_HEALTH:
                         powerupColor = (Color){255, 100, 100, (unsigned char)(255 * pulseAlpha)};
                         break;
+                    case POWERUP_LIFE:
+                        powerupColor = (Color){255, 255, 0, (unsigned char)(255 * pulseAlpha)};
+                        break;
                     case POWERUP_SHOTGUN:
                         powerupColor = (Color){100, 255, 100, (unsigned char)(255 * pulseAlpha)};
                         break;
@@ -76,6 +79,10 @@ void renderPowerups(const GameState* state) {
                     // Draw "G" for grenade powerup
                     Color textColor = {255, 255, 255, (unsigned char)(255 * pulseAlpha)};
                     DrawText("G", powerup->base.x - 6, powerup->base.y - 8, 16, textColor);
+                } else if (powerup->type == POWERUP_LIFE) {
+                    // Draw "1UP" for life powerup
+                    Color textColor = {255, 255, 0, (unsigned char)(255 * pulseAlpha)};
+                    DrawText("1UP", powerup->base.x - 12, powerup->base.y - 8, 14, textColor);
                 }
             }
         }
@@ -639,6 +646,26 @@ void renderMenu(const GameState* state) {
     // Clear screen with a very dark background for space
     ClearBackground((Color){5, 5, 15, 255});
     
+    // Draw animated background asteroids
+    for (int i = 0; i < MAX_MENU_ASTEROIDS; i++) {
+        if (state->menuAsteroids[i].active) {
+            // Draw each menu asteroid as an octagon, similar to game asteroids
+            Vector2 points[8];
+            for (int j = 0; j < 8; j++) {
+                float angle = state->menuAsteroids[i].angle + j * 45.0f;  // 360 / 8 = 45 degrees
+                float radians = angle * PI / 180.0f;
+                points[j].x = state->menuAsteroids[i].x + sin(radians) * state->menuAsteroids[i].radius;
+                points[j].y = state->menuAsteroids[i].y - cos(radians) * state->menuAsteroids[i].radius;
+            }
+            
+            // Draw the asteroid outlines
+            for (int j = 0; j < 8; j++) {
+                int next = (j + 1) % 8;
+                DrawLineV(points[j], points[next], (Color){150, 150, 150, 200});
+            }
+        }
+    }
+    
     // Draw title
     const char* title = "ASTEROIDS";
     int titleWidth = MeasureText(title, TITLE_FONT_SIZE);
@@ -977,19 +1004,19 @@ void renderInfo(const GameState* state) {
     // Clear screen with a very dark background for space
     ClearBackground((Color){5, 5, 15, 255});
     
-    // Draw title (same style as other menus)
+    // Draw title 
     const char* title = "GAME INFORMATION";
     int titleWidth = MeasureText(title, TITLE_FONT_SIZE);
-    DrawText(title, WINDOW_WIDTH/2 - titleWidth/2, WINDOW_HEIGHT/4, TITLE_FONT_SIZE, WHITE);
+    DrawText(title, WINDOW_WIDTH/2 - titleWidth/2, WINDOW_HEIGHT/4 - 30, TITLE_FONT_SIZE, WHITE);
     
-    // Center the two columns on screen with more spacing
-    int totalContentWidth = 800; // Increased width for more spacing
+    // Center the two columns on screen
+    int totalContentWidth = 800; 
     int startX = (WINDOW_WIDTH - totalContentWidth) / 2;
     int leftColumnX = startX;
-    int rightColumnX = startX + totalContentWidth / 2 + 80; // Increased spacing from 20 to 80
+    int rightColumnX = startX + totalContentWidth / 2 + 80; 
     
     // Left Column - Controls and Weapons
-    int currentY = WINDOW_HEIGHT/4 + 100;
+    int currentY = WINDOW_HEIGHT/4 + 45; 
     
     // Controls section
     DrawText("CONTROLS:", leftColumnX, currentY, 30, (Color){255, 200, 100, 255});
@@ -1028,7 +1055,29 @@ void renderInfo(const GameState* state) {
         DrawText("+", leftColumnX + 16, currentY + 8, 16, WHITE);
     }
     DrawText("Health - Restores 50 health", leftColumnX + 45, currentY + 8, 18, WHITE);
-    currentY += 35;
+    currentY += 40; 
+
+    // Life powerup
+    bool drewLifeTexture = false;
+    for (int i = 0; i < MAX_POWERUPS; i++) {
+        if (state->powerups[i].type == POWERUP_LIFE && state->powerups[i].texture.id > 0) {
+            float scale = 32.0f / state->powerups[i].texture.width;
+            Rectangle source = { 0, 0, state->powerups[i].texture.width, state->powerups[i].texture.height };
+            Rectangle dest = { leftColumnX + 5, currentY + 2, 
+                            state->powerups[i].texture.width * scale, 
+                            state->powerups[i].texture.height * scale };
+            Vector2 origin = { 0, 0 };
+            DrawTexturePro(state->powerups[i].texture, source, dest, origin, 0.0f, WHITE);
+            drewLifeTexture = true;
+            break;
+        }
+    }
+    if (!drewLifeTexture) {
+        DrawCircleV((Vector2){leftColumnX + 20, currentY + 16}, 14, (Color){255, 100, 255, 255});
+        DrawText("1UP", leftColumnX + 8, currentY + 8, 14, WHITE);
+    }
+    DrawText("Extra Life - Gain one additional life", leftColumnX + 45, currentY + 8, 18, WHITE);
+    currentY += 40; 
     
     // Shotgun powerup
     bool drewShotgunTexture = false;
@@ -1050,7 +1099,7 @@ void renderInfo(const GameState* state) {
         DrawText("S", leftColumnX + 16, currentY + 8, 16, WHITE);
     }
     DrawText("Shotgun - 10 shots", leftColumnX + 45, currentY + 8, 18, WHITE);
-    currentY += 35;
+    currentY += 40; 
     
     // Grenade powerup
     bool drewGrenadeTexture = false;
@@ -1074,7 +1123,7 @@ void renderInfo(const GameState* state) {
     DrawText("Grenade - 5 explosive shots", leftColumnX + 45, currentY + 8, 18, WHITE);
     
     // Right Column - Enemies and Objectives
-    currentY = WINDOW_HEIGHT/4 + 100;
+    currentY = WINDOW_HEIGHT/4 + 45; 
     
     // Enemies section
     DrawText("ENEMIES:", rightColumnX, currentY, 30, (Color){255, 100, 100, 255});
@@ -1130,14 +1179,14 @@ void renderInfo(const GameState* state) {
     // Game objective
     DrawText("OBJECTIVES:", rightColumnX, currentY, 30, (Color){255, 255, 100, 255});
     currentY += 45;
-    DrawText("• Destroy all asteroids", rightColumnX, currentY, 20, WHITE);
+    DrawText("-> Destroy all asteroids", rightColumnX, currentY, 20, WHITE);
     currentY += 28;
-    DrawText("• Eliminate enemies for points", rightColumnX, currentY, 20, WHITE);
+    DrawText("-> Eliminate enemies for points", rightColumnX, currentY, 20, WHITE);
     currentY += 28;
-    DrawText("• Survive as long as possible", rightColumnX, currentY, 20, WHITE);
+    DrawText("-> Survive as long as possible", rightColumnX, currentY, 20, WHITE);
     
-    // Instructions to continue - centered at bottom (same style as other menus)
-    const char* continueText = "Press Z to start playing or ESC to return to menu";
+    // Instructions to continue - centered at bottom 
+    const char* continueText = "Press Z to start playing!";
     int continueWidth = MeasureText(continueText, OPTIONS_FONT_SIZE);
     DrawText(continueText, 
              WINDOW_WIDTH/2 - continueWidth/2, 
@@ -1145,7 +1194,7 @@ void renderInfo(const GameState* state) {
              OPTIONS_FONT_SIZE, 
              WHITE);
     
-    // Draw version number in the bottom right corner (same as other menus)
+    // Draw version number in the bottom right corner 
     DrawText(VERSION_NUMBER, 
              WINDOW_WIDTH - MeasureText(VERSION_NUMBER, 16) - 10,
              WINDOW_HEIGHT - 25,

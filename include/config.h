@@ -4,7 +4,7 @@
 // =============================================================================
 // GAME VERSION
 // =============================================================================
-#define VERSION_NUMBER "v2.2.0"
+#define VERSION_NUMBER "v2.3.0"
 
 // =============================================================================
 // WINDOW & MAP SETTINGS
@@ -56,7 +56,7 @@
 // =============================================================================
 #define MAX_ASTEROIDS 50
 #define BASE_ASTEROID_COUNT 10
-#define ASTEROID_INCREMENT 3
+#define ASTEROID_INCREMENT 2
 #define LARGE_ASTEROID_DAMAGE 40
 #define MEDIUM_ASTEROID_DAMAGE 20
 #define SMALL_ASTEROID_DAMAGE 10
@@ -151,6 +151,7 @@
 
 // Powerup Textures
 #define HEALTH_POWERUP_TEXTURE_PATH "resources/powerups/health.png"
+#define LIFE_POWERUP_TEXTURE_PATH "resources/powerups/life.png"
 #define SHOTGUN_POWERUP_TEXTURE_PATH "resources/powerups/shotgun.png"
 #define GRENADE_POWERUP_TEXTURE_PATH "resources/powerups/grenade.png"
 #define POWERUP_TEXTURE_SCALE 0.8f
@@ -165,6 +166,7 @@
 #define TITLE_FONT_SIZE 60
 #define BUTTON_FONT_SIZE 30
 #define OPTIONS_FONT_SIZE 24
+#define MAX_MENU_ASTEROIDS 20
 
 // =============================================================================
 // ENEMY PARTICLE SETTINGS
@@ -186,9 +188,10 @@
 // =============================================================================
 // POWERUP SETTINGS
 // =============================================================================
-#define MAX_POWERUPS 20
+#define MAX_POWERUPS 50
 #define HEALTH_POWERUP_HEAL_AMOUNT 20
 #define HEALTH_POWERUP_DROP_CHANCE 10  // 10% chance
+#define LIFE_POWERUP_DROP_CHANCE 2    // 2% chance for life drop
 #define SHOTGUN_DROP_CHANCE 20         // 20% chance for shotgun drop from scouts
 #define GRENADE_DROP_CHANCE 20         // 20% chance for grenade drop from tanks
 #define POWERUP_LIFETIME 15.0f  // Powerups last 15 seconds

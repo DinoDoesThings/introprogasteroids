@@ -108,6 +108,15 @@ void loadAllTextures(GameState* state) {
             break;
         }
     }
+
+    for (int i = 0; i < MAX_POWERUPS; i++) {
+        if (!state->powerups[i].base.active && state->powerups[i].texture.id == 0) {
+            state->powerups[i].type = POWERUP_LIFE;
+            state->powerups[i].texture = loadTextureOnce(LIFE_POWERUP_TEXTURE_PATH);
+            state->powerups[i].base.active = false;
+            break;
+        }
+    }
     
     for (int i = 0; i < MAX_POWERUPS; i++) {
         if (!state->powerups[i].base.active && state->powerups[i].texture.id == 0) {

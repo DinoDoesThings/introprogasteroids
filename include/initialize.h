@@ -6,6 +6,7 @@
 
 void startWave(GameState* state);
 void initGameState(GameState* state);
+void initMenuAsteroids(GameState* state);
 void resetGameData(GameState* state);
 void resetShip(GameState* state);
 

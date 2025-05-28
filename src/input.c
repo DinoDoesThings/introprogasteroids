@@ -161,7 +161,134 @@ void handleInput(GameState* state) {
     }
 }
 
+void updateMenuAsteroids(GameState* state, float deltaTime) {
+    // First update positions
+    for (int i = 0; i < MAX_MENU_ASTEROIDS; i++) {
+        if (state->menuAsteroids[i].active) {
+            // Update position
+            state->menuAsteroids[i].x += state->menuAsteroids[i].dx * 60 * deltaTime;
+            state->menuAsteroids[i].y += state->menuAsteroids[i].dy * 60 * deltaTime;
+            
+            // Update rotation
+            state->menuAsteroids[i].angle += state->menuAsteroids[i].rotationSpeed * 60 * deltaTime;
+            
+            // Check if asteroid is completely off screen
+            float buffer = state->menuAsteroids[i].radius * 2; // Extra buffer
+            if (state->menuAsteroids[i].x < -buffer || 
+                state->menuAsteroids[i].x > WINDOW_WIDTH + buffer ||
+                state->menuAsteroids[i].y < -buffer || 
+                state->menuAsteroids[i].y > WINDOW_HEIGHT + buffer) {
+                
+                // Reset this asteroid to come in from a random edge
+                int side = GetRandomValue(0, 3); // 0: top, 1: right, 2: bottom, 3: left
+                
+                switch (side) {
+                    case 0: // Top
+                        state->menuAsteroids[i].x = GetRandomValue(0, WINDOW_WIDTH);
+                        state->menuAsteroids[i].y = -state->menuAsteroids[i].radius;
+                        break;
+                    case 1: // Right
+                        state->menuAsteroids[i].x = WINDOW_WIDTH + state->menuAsteroids[i].radius;
+                        state->menuAsteroids[i].y = GetRandomValue(0, WINDOW_HEIGHT);
+                        break;
+                    case 2: // Bottom
+                        state->menuAsteroids[i].x = GetRandomValue(0, WINDOW_WIDTH);
+                        state->menuAsteroids[i].y = WINDOW_HEIGHT + state->menuAsteroids[i].radius;
+                        break;
+                    case 3: // Left
+                        state->menuAsteroids[i].x = -state->menuAsteroids[i].radius;
+                        state->menuAsteroids[i].y = GetRandomValue(0, WINDOW_HEIGHT);
+                        break;
+                }
+                
+                // New random velocity toward approximate center of screen
+                float targetX = WINDOW_WIDTH/2 + GetRandomValue(-200, 200);
+                float targetY = WINDOW_HEIGHT/2 + GetRandomValue(-100, 100);
+                float angle = atan2(targetY - state->menuAsteroids[i].y, 
+                                  targetX - state->menuAsteroids[i].x);
+                
+                // Set random speed
+                float speed = GetRandomValue(30, 100) / 100.0f;
+                state->menuAsteroids[i].dx = cos(angle) * speed;
+                state->menuAsteroids[i].dy = sin(angle) * speed;
+                
+                // Random rotation speed
+                state->menuAsteroids[i].rotationSpeed = (GetRandomValue(0, 100) - 50) / 300.0f;
+            }
+        }
+    }
+    
+    // Check for collisions between menu asteroids (similar to game asteroid collision logic)
+    for (int i = 0; i < MAX_MENU_ASTEROIDS; i++) {
+        if (state->menuAsteroids[i].active) {
+            for (int j = i + 1; j < MAX_MENU_ASTEROIDS; j++) {
+                if (state->menuAsteroids[j].active) {
+                    // Check for collision
+                    float dx = state->menuAsteroids[j].x - state->menuAsteroids[i].x;
+                    float dy = state->menuAsteroids[j].y - state->menuAsteroids[i].y;
+                    float distance = sqrtf(dx * dx + dy * dy);
+                    
+                    if (distance < state->menuAsteroids[i].radius + state->menuAsteroids[j].radius) {
+                        // Collision detected - calculate collision response
+                        
+                        // Avoid division by zero
+                        if (distance == 0) distance = 0.01f;
+                        
+                        // Normalize direction
+                        float nx = dx / distance;
+                        float ny = dy / distance;
+                        
+                        // Calculate relative velocity
+                        float dvx = state->menuAsteroids[j].dx - state->menuAsteroids[i].dx;
+                        float dvy = state->menuAsteroids[j].dy - state->menuAsteroids[i].dy;
+                        
+                        // Calculate velocity along the normal direction
+                        float velocityAlongNormal = dvx * nx + dvy * ny;
+                        
+                        // Don't resolve if velocities are separating
+                        if (velocityAlongNormal > 0) continue;
+                        
+                        // Calculate restitution (bounciness)
+                        float restitution = 0.8f;
+                        
+                        // Calculate impulse scalar
+                        float impulse = -(1 + restitution) * velocityAlongNormal;
+                        
+                        // Calculate mass ratio based on radius
+                        float totalMass = state->menuAsteroids[i].radius + state->menuAsteroids[j].radius;
+                        float massRatio1 = state->menuAsteroids[j].radius / totalMass;
+                        float massRatio2 = state->menuAsteroids[i].radius / totalMass;
+                        
+                        // Apply impulse
+                        float impulsex = impulse * nx;
+                        float impulsey = impulse * ny;
+                        
+                        state->menuAsteroids[i].dx -= impulsex * massRatio1;
+                        state->menuAsteroids[i].dy -= impulsey * massRatio1;
+                        state->menuAsteroids[j].dx += impulsex * massRatio2;
+                        state->menuAsteroids[j].dy += impulsey * massRatio2;
+                        
+                        // Prevent asteroids from getting stuck together by separating them
+                        float overlap = state->menuAsteroids[i].radius + state->menuAsteroids[j].radius - distance;
+                        if (overlap > 0) {
+                            // Move asteroids apart based on their size/mass
+                            state->menuAsteroids[i].x -= nx * overlap * massRatio1 * 0.5f;
+                            state->menuAsteroids[i].y -= ny * overlap * massRatio1 * 0.5f;
+                            state->menuAsteroids[j].x += nx * overlap * massRatio2 * 0.5f;
+                            state->menuAsteroids[j].y += ny * overlap * massRatio2 * 0.5f;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Update this function to call our new menu asteroids update function
 void handleMenuInput(GameState* state) {
+    // Update menu background asteroids
+    updateMenuAsteroids(state, GetFrameTime());
+    
     Vector2 mousePoint = GetMousePosition();
     
     // Check if mouse is over the Play button

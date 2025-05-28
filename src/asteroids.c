@@ -52,6 +52,9 @@ void splitAsteroid(GameState* state, int index) {
     float x = state->asteroids[index].base.x;
     float y = state->asteroids[index].base.y;
     int size = state->asteroids[index].size;
+
+    // Try to spawn a life powerup before deactivating the asteroid
+    spawnLifePowerup(state, x, y);
     
     // Try to spawn a health powerup before deactivating the asteroid
     spawnHealthPowerup(state, x, y);

@@ -39,6 +39,34 @@ void spawnHealthPowerup(GameState* state, float x, float y) {
     }
 }
 
+void spawnLifePowerup(GameState* state, float x, float y) {
+    // Check drop chance
+    if (GetRandomValue(1, 100) > LIFE_POWERUP_DROP_CHANCE) {
+        return; // No powerup dropped
+    }
+    
+    // Find an inactive powerup slot
+    for (int i = 0; i < MAX_POWERUPS; i++) {
+        if (!state->powerups[i].base.active) {
+            state->powerups[i].base.active = true;
+            state->powerups[i].base.x = x;
+            state->powerups[i].base.y = y;
+            state->powerups[i].base.radius = 15.0f;
+            state->powerups[i].base.dx = 0;
+            state->powerups[i].base.dy = 0;
+            state->powerups[i].base.angle = 0;
+            state->powerups[i].type = POWERUP_LIFE;
+            state->powerups[i].lifetime = POWERUP_LIFETIME;
+            state->powerups[i].pulseTimer = 0.0f;
+            
+            // Try to load life powerup texture
+            state->powerups[i].texture = loadTextureOnce(LIFE_POWERUP_TEXTURE_PATH);
+            
+            break;
+        }
+    }
+}
+
 void spawnShotgunPowerup(GameState* state, float x, float y) {
     for (int i = 0; i < MAX_POWERUPS; i++) {
         if (!state->powerups[i].base.active) {
@@ -128,6 +156,9 @@ void updatePowerups(GameState* state, float deltaTime) {
                         state->isReloading = false;
                         state->reloadTimer = 0.0f;
                     }
+                }  else if (powerup->type == POWERUP_LIFE) {
+                    // Give player an extra life
+                    state->lives++;
                 }
                 
                 // Deactivate powerup

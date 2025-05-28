@@ -10,5 +10,6 @@ void handleOptionsInput(GameState* state);
 void handleGameOverInput(GameState* state);
 void handleInfoInput(GameState* state);
 void handleInput(GameState* state);
+void updateMenuAsteroids(GameState* state, float deltaTime);
 
 #endif // INPUT_H

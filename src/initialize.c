@@ -61,6 +61,53 @@ void startWave(GameState* state) {
     state->inWaveTransition = false;
 }
 
+void initMenuAsteroids(GameState* state) {
+    for (int i = 0; i < MAX_MENU_ASTEROIDS; i++) {
+        state->menuAsteroids[i].active = true;
+        
+        // Randomize asteroid size
+        state->menuAsteroids[i].radius = GetRandomValue(15, 40);
+        
+        // Start positions - either off-screen from left, right, top or bottom
+        int side = GetRandomValue(0, 3); // 0: top, 1: right, 2: bottom, 3: left
+        
+        switch (side) {
+            case 0: // Top
+                state->menuAsteroids[i].x = GetRandomValue(0, WINDOW_WIDTH);
+                state->menuAsteroids[i].y = -state->menuAsteroids[i].radius;
+                break;
+            case 1: // Right
+                state->menuAsteroids[i].x = WINDOW_WIDTH + state->menuAsteroids[i].radius;
+                state->menuAsteroids[i].y = GetRandomValue(0, WINDOW_HEIGHT);
+                break;
+            case 2: // Bottom
+                state->menuAsteroids[i].x = GetRandomValue(0, WINDOW_WIDTH);
+                state->menuAsteroids[i].y = WINDOW_HEIGHT + state->menuAsteroids[i].radius;
+                break;
+            case 3: // Left
+                state->menuAsteroids[i].x = -state->menuAsteroids[i].radius;
+                state->menuAsteroids[i].y = GetRandomValue(0, WINDOW_HEIGHT);
+                break;
+        }
+        
+        // Random velocity toward center of screen, but not directly
+        float angle = atan2(WINDOW_HEIGHT/2 - state->menuAsteroids[i].y, 
+                           WINDOW_WIDTH/2 - state->menuAsteroids[i].x);
+        
+        // Add some randomness to direction
+        angle += GetRandomValue(-30, 30) * PI / 180.0f;
+        
+        // Set random speed
+        float speed = GetRandomValue(30, 100) / 100.0f;
+        state->menuAsteroids[i].dx = cos(angle) * speed;
+        state->menuAsteroids[i].dy = sin(angle) * speed;
+        
+        // Random initial angle and rotation speed
+        state->menuAsteroids[i].angle = GetRandomValue(0, 359);
+        state->menuAsteroids[i].rotationSpeed = (GetRandomValue(0, 100) - 50) / 300.0f;
+    }
+}
+
 void initGameState(GameState* state) {
     // Initialize to default values
     state->score = 0;
@@ -151,6 +198,9 @@ void initGameState(GameState* state) {
     state->grenadeFireTimer = 0.0f;
     
     state->enemySpawnTimer = ENEMY_SPAWN_TIME;
+    
+    // Initialize menu background asteroids
+    initMenuAsteroids(state);
     
     // Start the first wave instead of directly creating asteroids
     startWave(state);
