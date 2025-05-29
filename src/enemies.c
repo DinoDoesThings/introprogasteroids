@@ -906,11 +906,6 @@ void updateEnemies(GameState* state, float deltaTime) {
                     }
                     splitAsteroid(state, j);
                     
-                    // Play asteroid hit sound
-                    if (state->soundLoaded) {
-                        PlaySound(state->sounds[SOUND_ASTEROID_HIT]);
-                    }
-                    
                     break;
                 }
             }
@@ -925,11 +920,6 @@ void updateEnemies(GameState* state, float deltaTime) {
                 }
                 
                 state->health -= state->enemyBullets[i].damage;
-                
-                // Play hit sound
-                if (state->soundLoaded) {
-                    PlaySound(state->sounds[SOUND_SHIP_HIT]);
-                }
                 
                 if (state->health <= 0) {
                     state->lives--;

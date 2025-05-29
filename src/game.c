@@ -83,7 +83,6 @@ void updateGame(GameState* state, float deltaTime) {
             if (state->reloadTimer <= 0) {
                 state->isReloading = false;
                 state->normalAmmo = MAX_AMMO;
-                state->currentAmmo = MAX_AMMO; // Keep for compatibility
                 
                 // Play reload finish sound
                 if (state->soundLoaded) {
@@ -282,9 +281,6 @@ void updateGame(GameState* state, float deltaTime) {
     
     // Update powerups
     updatePowerups(state, deltaTime);
-    
-    // Check powerup collisions
-    checkPowerupCollisions(state);
     
     // Update invulnerability timer and blinking effect
     if (state->isInvulnerable) {

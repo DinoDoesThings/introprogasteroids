@@ -125,7 +125,6 @@ typedef struct {
     int lives;
     int health;
     Camera2D camera;
-    int currentAmmo;
     float reloadTimer;
     bool isReloading;
     bool running;

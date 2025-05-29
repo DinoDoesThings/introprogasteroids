@@ -1137,7 +1137,7 @@ void renderInfo(const GameState* state) {
         DrawCircleV((Vector2){leftColumnX + 20, currentY + 16}, 14, (Color){255, 100, 100, 255});
         DrawText("+", leftColumnX + 16, currentY + 8, 16, WHITE);
     }
-    DrawText("Health - Restores 50 health", leftColumnX + 45, currentY + 8, 18, WHITE);
+    DrawText("Health - Restores 20 health", leftColumnX + 45, currentY + 8, 18, WHITE);
     currentY += 40; 
 
     // Life powerup

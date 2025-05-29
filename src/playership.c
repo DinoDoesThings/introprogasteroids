@@ -91,7 +91,6 @@ void fireWeapon(GameState* state) {
             state->currentWeapon = WEAPON_NORMAL;
             // Give full ammo when switching back to normal weapon
             state->normalAmmo = MAX_AMMO;
-            state->currentAmmo = MAX_AMMO; // Keep for compatibility
             // Cancel any ongoing reload since we now have full ammo
             state->isReloading = false;
             state->reloadTimer = 0.0f;
@@ -133,7 +132,6 @@ void fireWeapon(GameState* state) {
             state->currentWeapon = WEAPON_NORMAL;
             // Give full ammo when switching back to normal weapon
             state->normalAmmo = MAX_AMMO;
-            state->currentAmmo = MAX_AMMO; // Keep for compatibility
             // Cancel any ongoing reload since we now have full ammo
             state->isReloading = false;
             state->reloadTimer = 0.0f;

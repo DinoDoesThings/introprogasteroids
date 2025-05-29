@@ -138,6 +138,10 @@ void updatePowerups(GameState* state, float deltaTime) {
                     if (state->health > MAX_HEALTH) {
                         state->health = MAX_HEALTH;
                     }
+                    // Play pickup sound 
+                    if (state->soundLoaded) {
+                        PlaySound(state->sounds[SOUND_POWERUP_PICKUP]);
+                    }
                 } else if (powerup->type == POWERUP_SHOTGUN) {
                     // Give player shotgun weapon
                     state->currentWeapon = WEAPON_SHOTGUN;
@@ -146,6 +150,10 @@ void updatePowerups(GameState* state, float deltaTime) {
                     if (state->isReloading) {
                         state->isReloading = false;
                         state->reloadTimer = 0.0f;
+                    }
+                    // Play pickup sound 
+                    if (state->soundLoaded) {
+                        PlaySound(state->sounds[SOUND_POWERUP_PICKUP]);
                     }
                 } else if (powerup->type == POWERUP_GRENADE) {
                     // Give player grenade weapon
@@ -156,9 +164,17 @@ void updatePowerups(GameState* state, float deltaTime) {
                         state->isReloading = false;
                         state->reloadTimer = 0.0f;
                     }
+                    // Play pickup sound 
+                    if (state->soundLoaded) {
+                        PlaySound(state->sounds[SOUND_POWERUP_PICKUP]);
+                    }
                 }  else if (powerup->type == POWERUP_LIFE) {
                     // Give player an extra life
                     state->lives++;
+                    // Play pickup sound 
+                    if (state->soundLoaded) {
+                        PlaySound(state->sounds[SOUND_POWERUP_PICKUP]);
+                    }
                 }
                 
                 // Deactivate powerup

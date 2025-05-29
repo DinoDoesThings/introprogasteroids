@@ -126,7 +126,6 @@ void initGameState(GameState* state) {
     state->score = 0;
     state->lives = 3;
     state->health = MAX_HEALTH;
-    state->currentAmmo = MAX_AMMO;
     state->reloadTimer = 0.0f;
     state->isReloading = false;
     state->fireTimer = 0.0f;
@@ -144,7 +143,7 @@ void initGameState(GameState* state) {
     state->waveMessage[0] = '\0';
     state->waveMessageTimer = 0.0f;
     state->soundVolume = 0.5f;  // Default to half volume for sound
-    state->musicVolume = 0.5f;  // Default to half volume for music
+    state->musicVolume = 0.2f;  // Default to 20% volume for music
     state->isDraggingSlider = false;
     state->isDraggingMusicSlider = false;
     state->invulnerabilityTimer = 0.0f;
@@ -209,7 +208,6 @@ void initGameState(GameState* state) {
     state->normalAmmo = MAX_AMMO;
     state->shotgunAmmo = 0;
     state->grenadeAmmo = 0;
-    state->currentAmmo = MAX_AMMO; // Keep for compatibility
     state->fireTimer = 0.0f;
     state->shotgunFireTimer = 0.0f;
     state->grenadeFireTimer = 0.0f;
@@ -228,7 +226,6 @@ void resetGameData(GameState* state) {
     state->score = 0;
     state->lives = 3;
     state->health = MAX_HEALTH;
-    state->currentAmmo = MAX_AMMO;
     state->reloadTimer = 0.0f;
     state->isReloading = false;
     state->fireTimer = 0.0f;
@@ -295,7 +292,6 @@ void resetGameData(GameState* state) {
     state->normalAmmo = MAX_AMMO;
     state->shotgunAmmo = 0;
     state->grenadeAmmo = 0;
-    state->currentAmmo = MAX_AMMO; // Keep for compatibility
     state->isReloading = false;
     state->reloadTimer = 0.0f;
     state->fireTimer = 0.0f;
@@ -320,10 +316,9 @@ void resetShip(GameState* state) {
     state->ship.base.angle = 0;
     state->ship.base.radius = 15.0f;
     state->ship.base.active = true;
+    state->normalAmmo = MAX_AMMO; // Reset normal ammo
     state->health = MAX_HEALTH; // Reset health when respawning
-    state->currentAmmo = MAX_AMMO; // Reset ammo
     state->isReloading = false; // Stop reloading
-    
     // Activate invulnerability when ship respawns
     state->isInvulnerable = true;
     state->invulnerabilityTimer = INVULNERABILITY_TIME;

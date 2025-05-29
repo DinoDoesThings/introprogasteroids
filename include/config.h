@@ -4,7 +4,7 @@
 // =============================================================================
 // GAME VERSION
 // =============================================================================
-#define VERSION_NUMBER "v3.0.0 (Music!)"
+#define VERSION_NUMBER "v3.1.0 (Music + More Effects!)"
 
 // =============================================================================
 // WINDOW & MAP SETTINGS
@@ -123,16 +123,15 @@
 // =============================================================================
 // AUDIO SETTINGS
 // =============================================================================
-#define MAX_SOUNDS 9  // Maximum number of sounds the program will load
+#define MAX_SOUNDS 8  // Maximum number of sounds the program will load
 #define SOUND_SHOOT 0
 #define SOUND_RELOAD_START 1
 #define SOUND_RELOAD_FINISH 2
 #define SOUND_ASTEROID_HIT 3
-#define SOUND_SHIP_HIT 4
-#define SOUND_SCOUT_SHOOT 5
-#define SOUND_TANK_SHOOT 6
-#define SOUND_ENEMY_EXPLODE 7
-#define SOUND_POWERUP_PICKUP 8
+#define SOUND_SCOUT_SHOOT 4
+#define SOUND_TANK_SHOOT 5
+#define SOUND_ENEMY_EXPLODE 6
+#define SOUND_POWERUP_PICKUP 7
 
 // =============================================================================
 // TEXTURE SETTINGS

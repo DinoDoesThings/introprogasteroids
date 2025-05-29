@@ -17,7 +17,6 @@ void loadSounds(GameState* state) {
     state->sounds[SOUND_RELOAD_START] = LoadSound("resources/sounds/reload_start.ogg");
     state->sounds[SOUND_RELOAD_FINISH] = LoadSound("resources/sounds/reload_finish.ogg");
     state->sounds[SOUND_ASTEROID_HIT] = LoadSound("resources/sounds/asteroid_hit.ogg");
-    state->sounds[SOUND_SHIP_HIT] = LoadSound("resources/sounds/ship_hit.ogg");
     state->sounds[SOUND_SCOUT_SHOOT] = LoadSound("resources/sounds/scout_shoot.ogg");
     state->sounds[SOUND_TANK_SHOOT] = LoadSound("resources/sounds/tank_shoot.ogg");
     state->sounds[SOUND_ENEMY_EXPLODE] = LoadSound("resources/sounds/enemy_explode.ogg");

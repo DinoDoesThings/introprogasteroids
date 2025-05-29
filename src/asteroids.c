@@ -61,6 +61,11 @@ void splitAsteroid(GameState* state, int index) {
     // Try to spawn a health powerup before deactivating the asteroid
     spawnHealthPowerup(state, x, y);
     
+    // Play asteroid hit sound
+    if (state->soundLoaded) {
+        PlaySound(state->sounds[SOUND_ASTEROID_HIT]);
+    }
+    
     // Deactivate the hit asteroid
     state->asteroids[index].base.active = false;
     
@@ -87,7 +92,6 @@ void splitAsteroid(GameState* state, int index) {
                 created++;
             }
         }
-        
         state->asteroidsRemaining++;
     } else {
         // Only decrement when the smallest asteroid is destroyed (no split)
