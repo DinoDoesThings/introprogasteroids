@@ -139,20 +139,20 @@ void handleInput(GameState* state) {
     
     if (IsKeyDown(KEY_A)) {
         // Strafe left (perpendicular to the ship's facing direction)
-        state->ship.base.dx -= SHIP_ACCELERATION * 0.7f * cos(state->ship.base.angle * PI / 180.0f);
-        state->ship.base.dy -= SHIP_ACCELERATION * 0.7f * sin(state->ship.base.angle * PI / 180.0f);
+        state->ship.base.dx -= SHIP_ACCELERATION * 0.8f * cos(state->ship.base.angle * PI / 180.0f);
+        state->ship.base.dy -= SHIP_ACCELERATION * 0.8f * sin(state->ship.base.angle * PI / 180.0f);
     }
     
     if (IsKeyDown(KEY_D)) {
         // Strafe right (perpendicular to the ship's facing direction)
-        state->ship.base.dx += SHIP_ACCELERATION * 0.7f * cos(state->ship.base.angle * PI / 180.0f);
-        state->ship.base.dy += SHIP_ACCELERATION * 0.7f * sin(state->ship.base.angle * PI / 180.0f);
+        state->ship.base.dx += SHIP_ACCELERATION * 0.8f * cos(state->ship.base.angle * PI / 180.0f);
+        state->ship.base.dy += SHIP_ACCELERATION * 0.8f * sin(state->ship.base.angle * PI / 180.0f);
     }
     
     if (IsKeyDown(KEY_S)) {
         // Decelerate/reverse
-        state->ship.base.dx -= SHIP_ACCELERATION * 0.5f * sin(state->ship.base.angle * PI / 180.0f);
-        state->ship.base.dy += SHIP_ACCELERATION * 0.5f * cos(state->ship.base.angle * PI / 180.0f);
+        state->ship.base.dx -= SHIP_ACCELERATION * 0.7f * sin(state->ship.base.angle * PI / 180.0f);
+        state->ship.base.dy += SHIP_ACCELERATION * 0.7f * cos(state->ship.base.angle * PI / 180.0f);
     }
 
     if (IsKeyPressed(KEY_R)) {

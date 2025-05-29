@@ -101,17 +101,17 @@ void fireWeapon(GameState* state) {
             if (!state->enemyBullets[i].base.active) {
                 state->enemyBullets[i].base.active = true;
                 
-                // Start the grenade at the ship's position
-                state->enemyBullets[i].base.x = state->ship.base.x;
-                state->enemyBullets[i].base.y = state->ship.base.y;
-                state->enemyBullets[i].base.radius = 6.0f; // Larger grenade
-                
                 // Set grenade properties
                 state->enemyBullets[i].damage = PLAYER_GRENADE_EXPLOSION_DAMAGE;
                 state->enemyBullets[i].type = BULLET_GRENADE;
                 state->enemyBullets[i].timer = PLAYER_GRENADE_TIMER;
                 state->enemyBullets[i].hasExploded = false;
                 state->enemyBullets[i].isPlayerBullet = true; // Mark as player bullet
+                
+                // Start the grenade at the ship's position
+                state->enemyBullets[i].base.x = state->ship.base.x;
+                state->enemyBullets[i].base.y = state->ship.base.y;
+                state->enemyBullets[i].base.radius = 6.0f; // Larger grenade
                 
                 // Set grenade velocity toward the mouse cursor (slower than bullets)
                 state->enemyBullets[i].base.dx = dx * BULLET_SPEED * 0.7f;

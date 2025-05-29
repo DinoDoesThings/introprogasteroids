@@ -909,9 +909,99 @@ void updateEnemies(GameState* state, float deltaTime) {
                     break;
                 }
             }
+            
+            // Check for player-controlled enemy bullets hitting enemies
+            if (state->enemyBullets[i].isPlayerBullet) {
+                for (int j = 0; j < MAX_ENEMIES; j++) {
+                    if (state->enemies[j].base.active && 
+                        checkCollision(&state->enemyBullets[i].base, &state->enemies[j].base)) {
+                        
+                        // Deactivate bullet unless it's a grenade that needs to explode
+                        if (state->enemyBullets[i].type != BULLET_GRENADE || 
+                            state->enemyBullets[i].hasExploded) {
+                            state->enemyBullets[i].base.active = false;
+                        } else if (state->enemyBullets[i].type == BULLET_GRENADE && 
+                                  !state->enemyBullets[i].hasExploded) {
+                            explodeGrenade(state, i);
+                        }
+                        
+                        // Apply damage to enemy
+                        state->enemies[j].health -= state->enemyBullets[i].damage;
+                        
+                        // Check if enemy is destroyed
+                        if (state->enemies[j].health <= 0) {
+                            // Enemy destroyed
+                            state->enemies[j].base.active = false;
+                            
+                            // Add score based on enemy type
+                            state->score += (state->enemies[j].type == ENEMY_TANK) ? 
+                                            TANK_ENEMY_SCORE : SCOUT_ENEMY_SCORE;
+                            
+                            // Check for powerup drops
+                            if (state->enemies[j].type == ENEMY_SCOUT) {
+                                // 10% chance to drop shotgun powerup
+                                if (GetRandomValue(1, 100) <= SHOTGUN_DROP_CHANCE) {
+                                    spawnShotgunPowerup(state, state->enemies[j].base.x, 
+                                                      state->enemies[j].base.y);
+                                }
+                            } else if (state->enemies[j].type == ENEMY_TANK) {
+                                // 10% chance to drop grenade powerup
+                                if (GetRandomValue(1, 100) <= GRENADE_DROP_CHANCE) {
+                                    spawnGrenadePowerup(state, state->enemies[j].base.x, 
+                                                      state->enemies[j].base.y);
+                                }
+                            }
+                            
+                            // Play explosion sound
+                            if (state->soundLoaded) {
+                                PlaySound(state->sounds[SOUND_ENEMY_EXPLODE]);
+                            }
+                            
+                            // Generate explosion particles
+                            for (int k = 0; k < 20; k++) {
+                                for (int p = 0; p < MAX_PARTICLES; p++) {
+                                    if (!state->particles[p].active) {
+                                        state->particles[p].active = true;
+                                        state->particles[p].life = PARTICLE_LIFETIME;
+                                        state->particles[p].position.x = state->enemies[j].base.x;
+                                        state->particles[p].position.y = state->enemies[j].base.y;
+                                        
+                                        float particleAngle = GetRandomValue(0, 359) * PI / 180.0f;
+                                        float particleSpeed = PARTICLE_SPEED * 
+                                                            GetRandomValue(50, 150) / 100.0f;
+                                        state->particles[p].velocity.x = cos(particleAngle) * 
+                                                                        particleSpeed;
+                                        state->particles[p].velocity.y = sin(particleAngle) * 
+                                                                        particleSpeed;
+                                        
+                                        state->particles[p].radius = GetRandomValue(2, 6);
+                                        
+                                        // Enemy explosion colors - reddish
+                                        state->particles[p].color = (Color){ 
+                                            GetRandomValue(200, 255), 
+                                            GetRandomValue(50, 100),
+                                            GetRandomValue(0, 50),
+                                            255
+                                        };
+                                        
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // If bullet hit an enemy, it shouldn't continue to the player collision check
+                        if (!state->enemyBullets[i].base.active) {
+                            break;
+                        }
+                    }
+                }
+            }
 
             // Check for collision with player
-            if (checkCollision(&state->ship.base, &state->enemyBullets[i].base)) {
+            if (state->enemyBullets[i].base.active && 
+                checkCollision(&state->ship.base, &state->enemyBullets[i].base) && 
+                !state->enemyBullets[i].isPlayerBullet) {
                 // If it's a grenade, explode it on impact with player
                 if (state->enemyBullets[i].type == BULLET_GRENADE && !state->enemyBullets[i].hasExploded) {
                     explodeGrenade(state, i);

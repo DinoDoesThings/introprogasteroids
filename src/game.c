@@ -301,8 +301,3 @@ void updateGame(GameState* state, float deltaTime) {
         }
     }
 }
-
-void preloadTextures(GameState* state) {
-    // This function is now much simpler as I delegated the work to the resource manager
-    loadAllTextures(state);
-}

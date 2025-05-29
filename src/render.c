@@ -365,7 +365,7 @@ void renderEnemies(const GameState* state) {
                     bulletColor = RED;
                 } else {
                     // Normal bullets - color based on damage
-                    bulletColor = (state->enemyBullets[i].damage >= TANK_ENEMY_BULLET_DAMAGE) ? RED : BLUE;
+                    bulletColor = (state->enemyBullets[i].damage >= TANK_ENEMY_BULLET_DAMAGE) ? RED : YELLOW;
                 }
                 
                 DrawCircleV((Vector2){state->enemyBullets[i].base.x, state->enemyBullets[i].base.y}, 
