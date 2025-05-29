@@ -137,24 +137,24 @@
 // TEXTURE SETTINGS
 // =============================================================================
 // Player Ship
-#define SHIP_TEXTURE_PATH "resources/ships/playership.png"
+#define SHIP_TEXTURE_PATH "./resources/ships/playership.png"
 #define SHIP_TEXTURE_SCALE 1.0f
 
 // Enemy Ships
-#define SCOUT_TEXTURE_PATH "resources/ships/scout.png"
+#define SCOUT_TEXTURE_PATH "./resources/ships/scout.png"
 #define SCOUT_TEXTURE_SCALE 1.0f
 
-#define TANK_TEXTURE_PATH "resources/ships/tank.png"
+#define TANK_TEXTURE_PATH "./resources/ships/tank.png"
 #define TANK_TEXTURE_SCALE 1.3f   // 30% bigger than scout
 
 // Misc
-#define CROSSHAIR_TEXTURE_PATH "resources/misc/crosshair.png"
+#define CROSSHAIR_TEXTURE_PATH "./resources/misc/crosshair.png"
 
 // Powerup Textures
-#define HEALTH_POWERUP_TEXTURE_PATH "resources/powerups/health.png"
-#define LIFE_POWERUP_TEXTURE_PATH "resources/powerups/life.png"
-#define SHOTGUN_POWERUP_TEXTURE_PATH "resources/powerups/shotgun.png"
-#define GRENADE_POWERUP_TEXTURE_PATH "resources/powerups/grenade.png"
+#define HEALTH_POWERUP_TEXTURE_PATH "./resources/powerups/health.png"
+#define LIFE_POWERUP_TEXTURE_PATH "./resources/powerups/life.png"
+#define SHOTGUN_POWERUP_TEXTURE_PATH "./resources/powerups/shotgun.png"
+#define GRENADE_POWERUP_TEXTURE_PATH "./resources/powerups/grenade.png"
 #define POWERUP_TEXTURE_SCALE 0.8f
 
 // =============================================================================

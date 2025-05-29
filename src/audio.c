@@ -13,14 +13,14 @@ void loadSounds(GameState* state) {
     InitAudioDevice();
     
     // Load sound effects
-    state->sounds[SOUND_SHOOT] = LoadSound("resources/sounds/shoot.ogg");
-    state->sounds[SOUND_RELOAD_START] = LoadSound("resources/sounds/reload_start.ogg");
-    state->sounds[SOUND_RELOAD_FINISH] = LoadSound("resources/sounds/reload_finish.ogg");
-    state->sounds[SOUND_ASTEROID_HIT] = LoadSound("resources/sounds/asteroid_hit.ogg");
-    state->sounds[SOUND_SCOUT_SHOOT] = LoadSound("resources/sounds/scout_shoot.ogg");
-    state->sounds[SOUND_TANK_SHOOT] = LoadSound("resources/sounds/tank_shoot.ogg");
-    state->sounds[SOUND_ENEMY_EXPLODE] = LoadSound("resources/sounds/enemy_explode.ogg");
-    state->sounds[SOUND_POWERUP_PICKUP] = LoadSound("resources/sounds/powerup_pickup.ogg");
+    state->sounds[SOUND_SHOOT] = LoadSound("./resources/sounds/shoot.ogg");
+    state->sounds[SOUND_RELOAD_START] = LoadSound("./resources/sounds/reload_start.ogg");
+    state->sounds[SOUND_RELOAD_FINISH] = LoadSound("./resources/sounds/reload_finish.ogg");
+    state->sounds[SOUND_ASTEROID_HIT] = LoadSound("./resources/sounds/asteroid_hit.ogg");
+    state->sounds[SOUND_SCOUT_SHOOT] = LoadSound("./resources/sounds/scout_shoot.ogg");
+    state->sounds[SOUND_TANK_SHOOT] = LoadSound("./resources/sounds/tank_shoot.ogg");
+    state->sounds[SOUND_ENEMY_EXPLODE] = LoadSound("./resources/sounds/enemy_explode.ogg");
+    state->sounds[SOUND_POWERUP_PICKUP] = LoadSound("./resources/sounds/powerup_pickup.ogg");
     
     // Set initial volume for all sounds
     for (int i = 0; i < MAX_SOUNDS; i++) {
@@ -34,9 +34,9 @@ void loadMusic(GameState* state) {
     if (state->musicLoaded) return;
     
     // Load all music tracks
-    state->menuMusic = LoadMusicStream("resources/soundtrack/menu.ogg");
-    state->phase1Music = LoadMusicStream("resources/soundtrack/phase1.ogg");
-    state->phase2Music = LoadMusicStream("resources/soundtrack/phase2.ogg");
+    state->menuMusic = LoadMusicStream("./resources/soundtrack/menu.ogg");
+    state->phase1Music = LoadMusicStream("./resources/soundtrack/phase1.ogg");
+    state->phase2Music = LoadMusicStream("./resources/soundtrack/phase2.ogg");
     
     // Set initial music pointer to menu music
     state->currentMusic = &state->menuMusic;
