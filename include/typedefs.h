@@ -107,6 +107,12 @@ typedef struct {
 } Powerup;
 
 typedef struct {
+    int score;
+    int wave;
+    char date[12];  // Format: MM/DD/YYYY
+} HighScore;
+
+typedef struct {
     Ship ship;
     GameObject bullets[MAX_BULLETS];
     Asteroid asteroids[MAX_ASTEROIDS];
@@ -166,6 +172,8 @@ typedef struct {
     int enemiesSpawnedThisWave;
     int maxEnemiesThisWave;
     int EnemySpawnComplete;
+    HighScore highScores[MAX_HIGH_SCORES];
+    int scoreCount;
 } GameState;
 
 typedef struct {

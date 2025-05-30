@@ -12,6 +12,7 @@
 #include "config.h"
 #include "enemies.h"
 #include "powerups.h"
+#include "scoreboard.h"
 
 void renderPowerups(const GameState* state) {
     for (int i = 0; i < MAX_POWERUPS; i++) {
@@ -689,61 +690,95 @@ void renderMenu(const GameState* state) {
         }
     }
     
-    // Draw title
+    // Calculate estimated height of scoreboard
+    int scoreboardHeight = 50 + (MAX_HIGH_SCORES * 30);  // Header + (rows * row height)
+    int scoreboardY = (WINDOW_HEIGHT - scoreboardHeight) / 2;  // Center vertically
+    
+    // Draw scoreboard on left side
+    renderScoreboard(state, 20, scoreboardY, 350);
+    
+    // Calculate right side area (for title and buttons)
+    int rightSideX = 400;  // Starting X position of right side content
+    int rightSideWidth = WINDOW_WIDTH - rightSideX - 20;  // Width of right side area
+    int centerRightX = rightSideX + rightSideWidth/2;  // Center X of right side
+    
+    // Draw title centered in the right area
     const char* title = "ASTEROIDS";
     int titleWidth = MeasureText(title, TITLE_FONT_SIZE);
-    DrawText(title, WINDOW_WIDTH/2 - titleWidth/2, WINDOW_HEIGHT/4, TITLE_FONT_SIZE, WHITE);
+    DrawText(title, centerRightX - titleWidth/2, WINDOW_HEIGHT/4, TITLE_FONT_SIZE, WHITE);
+    
+    // Adjust button positions to be centered in the right area
+    Rectangle playButtonPos = {
+        centerRightX - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
+    Rectangle optionsButtonPos = {
+        centerRightX - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2 + (BUTTON_HEIGHT + 20),
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
+    Rectangle quitButtonPos = {
+        centerRightX - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2 + 2 * (BUTTON_HEIGHT + 20),
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
     
     // Draw play button
     Vector2 mousePoint = GetMousePosition();
-    bool isMouseOverPlayButton = CheckCollisionPointRec(mousePoint, state->playButton);
+    bool isMouseOverPlayButton = CheckCollisionPointRec(mousePoint, playButtonPos);
     
     Color playButtonColor = isMouseOverPlayButton ? GREEN : DARKGREEN;
-    DrawRectangleRec(state->playButton, playButtonColor);
-    DrawRectangleLinesEx(state->playButton, 2, WHITE);
+    DrawRectangleRec(playButtonPos, playButtonColor);
+    DrawRectangleLinesEx(playButtonPos, 2, WHITE);
     
     // Draw play button text
     const char* playButtonText = "PLAY";
     int playButtonTextWidth = MeasureText(playButtonText, BUTTON_FONT_SIZE);
     DrawText(
         playButtonText,
-        state->playButton.x + state->playButton.width/2 - playButtonTextWidth/2,
-        state->playButton.y + state->playButton.height/2 - BUTTON_FONT_SIZE/2,
+        playButtonPos.x + playButtonPos.width/2 - playButtonTextWidth/2,
+        playButtonPos.y + playButtonPos.height/2 - BUTTON_FONT_SIZE/2,
         BUTTON_FONT_SIZE,
         WHITE
     );
     
     // Draw options button
-    bool isMouseOverOptionsButton = CheckCollisionPointRec(mousePoint, state->optionsButton);
+    bool isMouseOverOptionsButton = CheckCollisionPointRec(mousePoint, optionsButtonPos);
     Color optionsButtonColor = isMouseOverOptionsButton ? BLUE : DARKBLUE;
-    DrawRectangleRec(state->optionsButton, optionsButtonColor);
-    DrawRectangleLinesEx(state->optionsButton, 2, WHITE);
+    DrawRectangleRec(optionsButtonPos, optionsButtonColor);
+    DrawRectangleLinesEx(optionsButtonPos, 2, WHITE);
     
     // Draw options button text
     const char* optionsButtonText = "OPTIONS";
     int optionsButtonTextWidth = MeasureText(optionsButtonText, BUTTON_FONT_SIZE);
     DrawText(
         optionsButtonText,
-        state->optionsButton.x + state->optionsButton.width/2 - optionsButtonTextWidth/2,
-        state->optionsButton.y + state->optionsButton.height/2 - BUTTON_FONT_SIZE/2,
+        optionsButtonPos.x + optionsButtonPos.width/2 - optionsButtonTextWidth/2,
+        optionsButtonPos.y + optionsButtonPos.height/2 - BUTTON_FONT_SIZE/2,
         BUTTON_FONT_SIZE,
         WHITE
     );
     
     // Draw quit button
-    bool isMouseOverQuitButton = CheckCollisionPointRec(mousePoint, state->quitButton);
+    bool isMouseOverQuitButton = CheckCollisionPointRec(mousePoint, quitButtonPos);
     
     Color quitButtonColor = isMouseOverQuitButton ? RED : MAROON;
-    DrawRectangleRec(state->quitButton, quitButtonColor);
-    DrawRectangleLinesEx(state->quitButton, 2, WHITE);
+    DrawRectangleRec(quitButtonPos, quitButtonColor);
+    DrawRectangleLinesEx(quitButtonPos, 2, WHITE);
     
     // Draw quit button text
     const char* quitButtonText = "QUIT";
     int quitButtonTextWidth = MeasureText(quitButtonText, BUTTON_FONT_SIZE);
     DrawText(
         quitButtonText,
-        state->quitButton.x + state->quitButton.width/2 - quitButtonTextWidth/2,
-        state->quitButton.y + state->quitButton.height/2 - BUTTON_FONT_SIZE/2,
+        quitButtonPos.x + quitButtonPos.width/2 - quitButtonTextWidth/2,
+        quitButtonPos.y + quitButtonPos.height/2 - BUTTON_FONT_SIZE/2,
         BUTTON_FONT_SIZE,
         WHITE
     );
@@ -814,56 +849,78 @@ void renderPause(const GameState* state) {
     int pauseTitleWidth = MeasureText(pauseTitle, TITLE_FONT_SIZE);
     DrawText(pauseTitle, WINDOW_WIDTH/2 - pauseTitleWidth/2, WINDOW_HEIGHT/4, TITLE_FONT_SIZE, WHITE);
     
+    // Calculate button positions centered on screen
+    Rectangle resumeButtonPos = {
+        WINDOW_WIDTH/2 - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2 - BUTTON_HEIGHT - 20,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
+    Rectangle optionsButtonPos = {
+        WINDOW_WIDTH/2 - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
+    Rectangle quitButtonPos = {
+        WINDOW_WIDTH/2 - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2 + BUTTON_HEIGHT + 20,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
     // Draw resume button
     Vector2 mousePoint = GetMousePosition();
-    bool isMouseOverResumeButton = CheckCollisionPointRec(mousePoint, state->resumeButton);
+    bool isMouseOverResumeButton = CheckCollisionPointRec(mousePoint, resumeButtonPos);
     
     Color resumeButtonColor = isMouseOverResumeButton ? GREEN : DARKGREEN;
-    DrawRectangleRec(state->resumeButton, resumeButtonColor);
-    DrawRectangleLinesEx(state->resumeButton, 2, WHITE);
+    DrawRectangleRec(resumeButtonPos, resumeButtonColor);
+    DrawRectangleLinesEx(resumeButtonPos, 2, WHITE);
     
     // Draw resume button text
     const char* resumeButtonText = "RESUME";
     int resumeButtonTextWidth = MeasureText(resumeButtonText, BUTTON_FONT_SIZE);
     DrawText(
         resumeButtonText,
-        state->resumeButton.x + state->resumeButton.width/2 - resumeButtonTextWidth/2,
-        state->resumeButton.y + state->resumeButton.height/2 - BUTTON_FONT_SIZE/2,
+        resumeButtonPos.x + resumeButtonPos.width/2 - resumeButtonTextWidth/2,
+        resumeButtonPos.y + resumeButtonPos.height/2 - BUTTON_FONT_SIZE/2,
         BUTTON_FONT_SIZE,
         WHITE
     );
     
     // Draw options button
-    bool isMouseOverOptionsButton = CheckCollisionPointRec(mousePoint, state->optionsButton);
+    bool isMouseOverOptionsButton = CheckCollisionPointRec(mousePoint, optionsButtonPos);
     Color optionsButtonColor = isMouseOverOptionsButton ? BLUE : DARKBLUE;
-    DrawRectangleRec(state->optionsButton, optionsButtonColor);
-    DrawRectangleLinesEx(state->optionsButton, 2, WHITE);
+    DrawRectangleRec(optionsButtonPos, optionsButtonColor);
+    DrawRectangleLinesEx(optionsButtonPos, 2, WHITE);
     
     // Draw options button text
     const char* optionsButtonText = "OPTIONS";
     int optionsButtonTextWidth = MeasureText(optionsButtonText, BUTTON_FONT_SIZE);
     DrawText(
         optionsButtonText,
-        state->optionsButton.x + state->optionsButton.width/2 - optionsButtonTextWidth/2,
-        state->optionsButton.y + state->optionsButton.height/2 - BUTTON_FONT_SIZE/2,
+        optionsButtonPos.x + optionsButtonPos.width/2 - optionsButtonTextWidth/2,
+        optionsButtonPos.y + optionsButtonPos.height/2 - BUTTON_FONT_SIZE/2,
         BUTTON_FONT_SIZE,
         WHITE
     );
     
     // Draw quit button
-    bool isMouseOverQuitButton = CheckCollisionPointRec(mousePoint, state->quitButton);
+    bool isMouseOverQuitButton = CheckCollisionPointRec(mousePoint, quitButtonPos);
     
     Color quitButtonColor = isMouseOverQuitButton ? RED : MAROON;
-    DrawRectangleRec(state->quitButton, quitButtonColor);
-    DrawRectangleLinesEx(state->quitButton, 2, WHITE);
+    DrawRectangleRec(quitButtonPos, quitButtonColor);
+    DrawRectangleLinesEx(quitButtonPos, 2, WHITE);
     
     // Draw quit button text
     const char* quitButtonText = "QUIT";
     int quitButtonTextWidth = MeasureText(quitButtonText, BUTTON_FONT_SIZE);
     DrawText(
         quitButtonText,
-        state->quitButton.x + state->quitButton.width/2 - quitButtonTextWidth/2,
-        state->quitButton.y + state->quitButton.height/2 - BUTTON_FONT_SIZE/2,
+        quitButtonPos.x + quitButtonPos.width/2 - quitButtonTextWidth/2,
+        quitButtonPos.y + quitButtonPos.height/2 - BUTTON_FONT_SIZE/2,
         BUTTON_FONT_SIZE,
         WHITE
     );

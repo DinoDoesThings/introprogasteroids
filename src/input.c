@@ -14,6 +14,8 @@
 #include "playership.h"
 #include "audio.h"
 #include "initialize.h"
+#include "scoreboard.h"
+#include "resources.h"
 
 void handleInput(GameState* state) {
     // BUG FIX: Add pause functionality
@@ -304,14 +306,46 @@ void handleMenuInput(GameState* state) {
     
     Vector2 mousePoint = GetMousePosition();
     
+    // Calculate right side area (for title and buttons)
+    int rightSideX = 400;  // Starting X position of right side content
+    int rightSideWidth = WINDOW_WIDTH - rightSideX - 20;  // Width of right side area
+    int centerRightX = rightSideX + rightSideWidth/2;  // Center X of right side
+    
+    // Recreate button positions to match renderMenu
+    Rectangle playButtonPos = {
+        centerRightX - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
+    Rectangle optionsButtonPos = {
+        centerRightX - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2 + (BUTTON_HEIGHT + 20),
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
+    Rectangle quitButtonPos = {
+        centerRightX - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2 + 2 * (BUTTON_HEIGHT + 20),
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
+    // Store these positions in the GameState for use in rendering
+    state->playButton = playButtonPos;
+    state->optionsButton = optionsButtonPos;
+    state->quitButton = quitButtonPos;
+    
     // Check if mouse is over the Play button
-    bool isMouseOverPlayButton = CheckCollisionPointRec(mousePoint, state->playButton);
+    bool isMouseOverPlayButton = CheckCollisionPointRec(mousePoint, playButtonPos);
     
     // Check if mouse is over the Options button
-    bool isMouseOverOptionsButton = CheckCollisionPointRec(mousePoint, state->optionsButton);
+    bool isMouseOverOptionsButton = CheckCollisionPointRec(mousePoint, optionsButtonPos);
     
     // Check if mouse is over the Quit button
-    bool isMouseOverQuitButton = CheckCollisionPointRec(mousePoint, state->quitButton);
+    bool isMouseOverQuitButton = CheckCollisionPointRec(mousePoint, quitButtonPos);
     
     // Change to info state if play button is clicked (instead of directly to game)
     if (isMouseOverPlayButton && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
@@ -333,14 +367,36 @@ void handleMenuInput(GameState* state) {
 void handlePauseInput(GameState* state) {
     Vector2 mousePoint = GetMousePosition();
     
+    // Calculate the same button positions as in renderPause
+    Rectangle resumeButtonPos = {
+        WINDOW_WIDTH/2 - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2 - BUTTON_HEIGHT - 20,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
+    Rectangle optionsButtonPos = {
+        WINDOW_WIDTH/2 - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
+    Rectangle quitButtonPos = {
+        WINDOW_WIDTH/2 - BUTTON_WIDTH/2,
+        WINDOW_HEIGHT/2 + BUTTON_HEIGHT + 20,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    };
+    
     // Check if mouse is over the Resume button
-    bool isMouseOverResumeButton = CheckCollisionPointRec(mousePoint, state->resumeButton);
+    bool isMouseOverResumeButton = CheckCollisionPointRec(mousePoint, resumeButtonPos);
     
     // Check if mouse is over the Options button
-    bool isMouseOverOptionsButton = CheckCollisionPointRec(mousePoint, state->optionsButton);
+    bool isMouseOverOptionsButton = CheckCollisionPointRec(mousePoint, optionsButtonPos);
     
     // Check if mouse is over the Quit button
-    bool isMouseOverQuitButton = CheckCollisionPointRec(mousePoint, state->quitButton);
+    bool isMouseOverQuitButton = CheckCollisionPointRec(mousePoint, quitButtonPos);
     
     // Resume the game if resume button is clicked
     if (isMouseOverResumeButton && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
@@ -431,6 +487,15 @@ void handleOptionsInput(GameState* state) {
 }
 
 void handleGameOverInput(GameState* state) {
+    // Save score if it hasn't been saved yet (add a flag to GameState if needed)
+    static bool scoreSaved = false;
+    
+    if (!scoreSaved) {
+        addHighScore(state, state->score, state->currentWave);
+        scoreSaved = true;
+    }
+    
+    // Rest of the existing function...
     Vector2 mousePoint = GetMousePosition();
     
     // Check if mouse is over the main menu button
@@ -440,7 +505,9 @@ void handleGameOverInput(GameState* state) {
     if (isMouseOverMainMenuButton && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
         // Reset game data but preserve sound settings
         resetGameData(state);
+        loadAllTextures(state); 
         state->screenState = MENU_STATE;
+        scoreSaved = false;  // Reset flag for next game
     }
 }
 

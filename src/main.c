@@ -17,6 +17,7 @@
 #include "audio.h"
 #include "powerups.h"
 #include "resources.h" 
+#include "scoreboard.h"
 
 int main(int argc, char* argv[]) {
     // Initialize random seed
@@ -122,6 +123,9 @@ int main(int argc, char* argv[]) {
 
     // Start playing menu music
     PlayMusicStream(gameState.menuMusic);
+    
+    // Load high scores
+    loadHighScores(&gameState);
     
     // Game loop
     while (!WindowShouldClose() && gameState.running) {
