@@ -197,11 +197,11 @@
 // =============================================================================
 #define MAX_POWERUPS 50
 #define HEALTH_POWERUP_HEAL_AMOUNT 20
-#define HEALTH_POWERUP_DROP_CHANCE 10  // 10% chance
-#define LIFE_POWERUP_DROP_CHANCE 2    // 2% chance for life drop
-#define SHOTGUN_DROP_CHANCE 40         // Normal: 20% chance for shotgun drop from scouts
-#define GRENADE_DROP_CHANCE 100         // Normal: 20% chance for grenade drop from tanks
-#define POWERUP_LIFETIME 15.0f  // Powerups last 15 seconds
-#define POWERUP_PULSE_SPEED 3.0f  // Speed of pulsing animation
+#define HEALTH_POWERUP_DROP_CHANCE 10   // 10% chance
+#define LIFE_POWERUP_DROP_CHANCE 2      // 2% chance for life drop
+#define SHOTGUN_DROP_CHANCE 100         // Normal: 20% chance for shotgun drop from scouts // Altered to 100% for testing
+#define GRENADE_DROP_CHANCE 100         // Normal: 20% chance for grenade drop from tanks // Altered to 100 for testing
+#define POWERUP_LIFETIME 15.0f          // Powerups last 15 seconds
+#define POWERUP_PULSE_SPEED 3.0f        // Speed of pulsing animation
 
 #endif // CONFIG_H
