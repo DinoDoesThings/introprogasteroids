@@ -21,7 +21,7 @@ void loadHighScores(GameState* state) {
     }
     
     if (file == NULL) {
-        // File doesn't exist yet, which is fine for first launch
+        printf("File doesn't exist or failed to open: %s\n", SCORE_FILE_PATH);
         return;
     }
     

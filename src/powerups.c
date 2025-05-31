@@ -187,11 +187,3 @@ void updatePowerups(GameState* state, float deltaTime) {
         }
     }
 }
-
-// This function can now be simplified as the resource manager handles the real unloading
-void unloadPowerupTextures(GameState* state) {
-    // Just reset the texture references, actual unloading happens in the resource manager
-    for (int i = 0; i < MAX_POWERUPS; i++) {
-        state->powerups[i].texture = (Texture2D){0};
-    }
-}

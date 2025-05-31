@@ -299,7 +299,6 @@ void updateMenuAsteroids(GameState* state, float deltaTime) {
     }
 }
 
-// Update this function to call our new menu asteroids update function
 void handleMenuInput(GameState* state) {
     // Update menu background asteroids
     updateMenuAsteroids(state, GetFrameTime());
@@ -405,7 +404,7 @@ void handlePauseInput(GameState* state) {
     
     // Go to options if options button is clicked
     if (isMouseOverOptionsButton && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        state->previousScreenState = PAUSE_STATE;  // Remember we came from pause
+        state->previousScreenState = PAUSE_STATE; 
         state->screenState = OPTIONS_STATE;
     }
     
@@ -428,7 +427,7 @@ void handleOptionsInput(GameState* state) {
     
     // Return to previous screen (menu or pause) if back button is clicked
     if (isMouseOverBackButton && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        state->screenState = state->previousScreenState;  // Return to wherever we came from
+        state->screenState = state->previousScreenState;  
     }
     
     Rectangle adjustedMusicSliderRect = {

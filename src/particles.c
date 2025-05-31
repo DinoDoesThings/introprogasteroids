@@ -37,7 +37,7 @@ void updateParticles(GameState* state, float deltaTime) {
 }
 
 void emitParticles(GameState* state, int count) {
-    // Calculate ship rear position (opposite to the front)
+    // Calculate ship rear position 
     float radians = state->ship.base.angle * PI / 180.0f;
     float rearX = state->ship.base.x - sin(radians) * state->ship.base.radius * 1.2f;
     float rearY = state->ship.base.y + cos(radians) * state->ship.base.radius * 1.2f;
@@ -111,7 +111,7 @@ EnemyParticleConfig getEnemyParticleConfig(EnemyType type) {
             break;
             
         default:
-            // Default configuration (same as scout)
+            // Default configuration 
             config.minRadius = SCOUT_PARTICLE_MIN_RADIUS;
             config.maxRadius = SCOUT_PARTICLE_MAX_RADIUS;
             config.randomRange = SCOUT_PARTICLE_RANDOM_RANGE;
@@ -130,7 +130,7 @@ void emitEnemyThrustParticles(GameState* state, Enemy* enemy, int count) {
     // Get particle configuration for this enemy type
     EnemyParticleConfig config = getEnemyParticleConfig(enemy->type);
     
-    // Calculate enemy rear position (opposite to facing direction)
+    // Calculate enemy rear position 
     float radians = enemy->base.angle * PI / 180.0f;
     
     // Get the texture scale for this enemy type to position particles correctly

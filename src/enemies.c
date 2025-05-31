@@ -34,6 +34,7 @@ void createEnemyExplosion(GameState* state, float x, float y, int particleCount)
 void spawnEnemy(GameState* state, EnemyType type) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         if (!state->enemies[i].base.active) {
+            // Initialize enemy properties
             state->enemies[i].base.active = true;
             state->enemies[i].type = type;
             state->enemies[i].base.angle = 0.0f;
@@ -46,7 +47,7 @@ void spawnEnemy(GameState* state, EnemyType type) {
             state->enemies[i].moveTimer = 0.0f;
             state->enemies[i].moveAngle = GetRandomValue(0, 359) * PI / 180.0f;
             
-            // Set enemy properties based on type
+            // Set health and radius based on type
             if (type == ENEMY_TANK) {
                 state->enemies[i].base.radius = TANK_ENEMY_RADIUS;
                 state->enemies[i].health = TANK_ENEMY_HEALTH;
@@ -57,9 +58,16 @@ void spawnEnemy(GameState* state, EnemyType type) {
                 state->enemies[i].texture = loadTextureOnce(SCOUT_TEXTURE_PATH);
             }
             
-            // Spawn enemies away from the player
-            float playerDistanceSquared = 0;
-            do {
+            // Try to find a safe spawn location
+            bool validPosition = false;
+            int attempts = 0;
+            const int MAX_ATTEMPTS = 50;
+            
+            while (!validPosition && attempts < MAX_ATTEMPTS) {
+                attempts++;
+                validPosition = true;
+                
+                // Generate random position
                 state->enemies[i].base.x = GetRandomValue(
                     state->enemies[i].base.radius, 
                     MAP_WIDTH - state->enemies[i].base.radius
@@ -70,14 +78,40 @@ void spawnEnemy(GameState* state, EnemyType type) {
                     MAP_HEIGHT - state->enemies[i].base.radius
                 );
                 
-                // Use squared distance for optimization
-                playerDistanceSquared = calculateDistanceSquared(
+                // Check distance from player 
+                float playerDistanceSquared = calculateDistanceSquared(
                     state->enemies[i].base.x, state->enemies[i].base.y,
                     state->ship.base.x, state->ship.base.y
                 );
                 
-            } while (playerDistanceSquared < 160000); // 400^2
+                // Too close to player?
+                if (playerDistanceSquared < 160000) { // 400^2
+                    validPosition = false;
+                    continue;
+                }
+                
+                // Check for collisions with asteroids
+                for (int j = 0; j < MAX_ASTEROIDS; j++) {
+                    if (!state->asteroids[j].base.active) continue;
+                    
+                    // Calculate safe distance from asteroid
+                    float safeDistance = state->enemies[i].base.radius + 
+                                         state->asteroids[j].base.radius + 20.0f; 
+                    
+                    float astDistSq = calculateDistanceSquared(
+                        state->enemies[i].base.x, state->enemies[i].base.y,
+                        state->asteroids[j].base.x, state->asteroids[j].base.y
+                    );
+                    
+                    if (astDistSq < safeDistance * safeDistance) {
+                        validPosition = false;
+                        break;
+                    }
+                }
+            }
             
+            // If we couldn't find a safe position after max attempts,
+            // just use the last position and hope for the best ¯\_(ツ)_/¯
             break;
         }
     }
@@ -88,6 +122,9 @@ void fireEnemyWeapon(GameState* state, Enemy* enemy) {
         if (!state->enemyBullets[i].base.active) {
             state->enemyBullets[i].base.active = true;
             
+            // Mark as enemy bullet
+            state->enemyBullets[i].isPlayerBullet = false;
+
             // Start the bullet at the enemy's position
             state->enemyBullets[i].base.x = enemy->base.x;
             state->enemyBullets[i].base.y = enemy->base.y;

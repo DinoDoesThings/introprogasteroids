@@ -365,8 +365,18 @@ void renderEnemies(const GameState* state) {
                     // Explosion bullets are red
                     bulletColor = RED;
                 } else {
-                    // Normal bullets - color based on damage
-                    bulletColor = (state->enemyBullets[i].damage >= TANK_ENEMY_BULLET_DAMAGE) ? RED : YELLOW;
+                    // Normal bullets - color based on enemy type
+                    if (state->enemyBullets[i].isPlayerBullet) {
+                        // Player bullets are yellow
+                        bulletColor = YELLOW;
+                    } else if (state->enemyBullets[i].damage >= TANK_ENEMY_BULLET_DAMAGE) {
+                        // Tank enemy bullets are red
+                        bulletColor = RED;
+                    } else {
+                        // Scout enemy bullets are blue
+                        bulletColor = BLUE;
+                }
+                
                 }
                 
                 DrawCircleV((Vector2){state->enemyBullets[i].base.x, state->enemyBullets[i].base.y}, 

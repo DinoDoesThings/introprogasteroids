@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 
     gameState.musicVolumeSlider = (Rectangle){
         WINDOW_WIDTH/2 - SLIDER_WIDTH/2,
-        WINDOW_HEIGHT/2 + 80,  // Position below the sound volume slider
+        WINDOW_HEIGHT/2 + 80,  
         SLIDER_WIDTH,
         SLIDER_HEIGHT
     };
